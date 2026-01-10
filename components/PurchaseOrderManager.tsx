@@ -93,7 +93,6 @@ const PurchaseOrderManager: React.FC<PurchaseOrderManagerProps> = ({ purchaseOrd
     } else {
       onUpdate([...purchaseOrders, finalPO]);
     }
-    setIsModalOpen(true);
     setIsModalOpen(false);
   };
 

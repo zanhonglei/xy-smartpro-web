@@ -4,17 +4,18 @@ import {
   Product, CategoryItem, ProjectStatus, Solution, User, 
   ConstructionProject, ConstructionPhaseStatus, SolutionTemplate, 
   Brand, Customer, CustomerStatus, Quote, Order, QuoteStatus, OrderStatus,
-  Supplier, PurchaseOrder, PurchaseOrderStatus, AfterSalesTicket, AfterSalesStatus, SupplierRMAStatus, SupplierRMA
+  Supplier, PurchaseOrder, PurchaseOrderStatus, AfterSalesTicket, AfterSalesStatus, SupplierRMAStatus, SupplierRMA,
+  FinanceAccount, FinanceTransaction, TransactionType, TransactionCategory,
+  Employee, Department, Role, SystemNotification, ConstructionStatus
 } from './types';
 import * as LucideIcons from 'lucide-react';
 
-// 动态图标映射
+// ... 保持图标和基础常量不变
 export const getIcon = (name: string) => {
   const Icon = (LucideIcons as any)[name] || LucideIcons.HelpCircle;
   return <Icon size={18} />;
 };
 
-// CATEGORY_ICONS mapping for display in the designer
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   '智能照明': <LucideIcons.Lightbulb size={18} />,
   '智能开关': <LucideIcons.ToggleRight size={18} />,
@@ -24,6 +25,119 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   '智能门锁': <LucideIcons.Lock size={18} />,
   '环境气候': <LucideIcons.Wind size={18} />,
 };
+
+export const MOCK_DEPARTMENTS: Department[] = [
+  { id: 'dept1', name: '总经办', description: '公司核心决策层' },
+  { id: 'dept2', name: '设计部', parentId: 'dept1', description: '负责智能方案全案设计' },
+  { id: 'dept3', name: '销售部', parentId: 'dept1', description: '客户拓展与维护' },
+  { id: 'dept4', name: '工程部', parentId: 'dept1', description: '负责施工现场交付' },
+  { id: 'dept5', name: '财务部', description: '资金管理与成本核算' }
+];
+
+export const MOCK_ROLES: Role[] = [
+  { id: 'role1', name: '超级管理员', description: '拥有系统所有权限', permissions: ['all'] },
+  { id: 'role2', name: '主案设计师', description: '负责设计方案与预算', permissions: ['design_view', 'design_edit', 'product_view'] },
+  { id: 'role3', name: '销售总监', description: '管理客户池与合同', permissions: ['customer_all', 'contract_view'] },
+  { id: 'role4', name: '财务经理', description: '负责收支审核与报表', permissions: ['finance_all'] }
+];
+
+export const MOCK_EMPLOYEES: Employee[] = [
+  {
+    id: 'e1',
+    name: '小陈',
+    email: 'ken@smarthome.com',
+    phone: '13811112222',
+    avatar: 'https://picsum.photos/seed/e1/100/100',
+    departmentId: 'dept2',
+    roleId: 'role2',
+    status: 'Active',
+    hireDate: '2023-01-15'
+  },
+  {
+    id: 'e2',
+    name: '王经理',
+    email: 'wang@smarthome.com',
+    phone: '13933334444',
+    avatar: 'https://picsum.photos/seed/e2/100/100',
+    departmentId: 'dept3',
+    roleId: 'role3',
+    status: 'Active',
+    hireDate: '2022-06-10'
+  },
+  {
+    id: 'e3',
+    name: '李工',
+    email: 'lee@smarthome.com',
+    phone: '13955556666',
+    avatar: 'https://picsum.photos/seed/e3/100/100',
+    departmentId: 'dept4',
+    roleId: 'role2',
+    status: 'Active',
+    hireDate: '2021-03-20'
+  }
+];
+
+export const MOCK_CONSTRUCTION: ConstructionProject[] = [
+  {
+    id: 'cp1',
+    solutionId: 's1',
+    orderId: 'ORD-1001',
+    solutionName: '别墅全屋智能改造',
+    customerName: '张三',
+    status: ConstructionStatus.ONGOING,
+    assignedStaffId: 'e3',
+    assignedStaffName: '李工',
+    startDate: '2023-11-20',
+    phases: [
+      {
+        id: 'ph1',
+        name: 'site_survey',
+        status: ConstructionPhaseStatus.COMPLETED,
+        plannedStartDate: '2023-11-20',
+        plannedEndDate: '2023-11-21',
+        supervisor: '李工',
+        progress: 100,
+        logs: []
+      },
+      {
+        id: 'ph2',
+        name: 'wiring',
+        status: ConstructionPhaseStatus.IN_PROGRESS,
+        plannedStartDate: '2023-11-22',
+        plannedEndDate: '2023-11-25',
+        supervisor: '李工',
+        progress: 45,
+        logs: []
+      }
+    ],
+    inspections: [
+      { id: 'ins1', inspector: '王经理', date: '2023-11-23', score: 95, content: '布线符合强弱电分离标准。', status: 'Pass' }
+    ]
+  },
+  {
+    id: 'cp2',
+    solutionId: 's2',
+    solutionName: '智能平层公寓全案',
+    customerName: '李四',
+    status: ConstructionStatus.UNASSIGNED,
+    phases: [],
+    inspections: []
+  }
+];
+
+// ... 其他 MOCK 常量保持不变 (MOCK_PRODUCTS, MOCK_CATEGORIES 等)
+export const MOCK_NOTIFICATIONS: SystemNotification[] = [
+  {
+    id: 'n1',
+    title: '系统版本升级公告 (v2.1)',
+    content: '本次升级优化了 AI 户型识别算法，提升了 3D 渲染速度。',
+    type: 'info',
+    targetType: 'all',
+    authorId: 'e2',
+    authorName: '系统管理员',
+    createdAt: '2023-11-20 10:00'
+  }
+];
 
 export const MOCK_CATEGORIES: CategoryItem[] = [
   { id: 'cat_root_1', name: '智能照明', iconName: 'Lightbulb', description: '全屋灯光控制系统' },
@@ -41,6 +155,50 @@ export const MOCK_BRANDS: Brand[] = [
   { id: 'b3', name: '小米', logo: 'https://picsum.photos/seed/mi/100/100', description: '以 IoT 平台为核心的消费电子公司。' },
 ];
 
+export const MOCK_FINANCE_ACCOUNTS: FinanceAccount[] = [
+  { id: 'acc1', name: '招商银行基本户', type: 'Bank', balance: 1250000.50, accountNumber: '**** 8888' },
+  { id: 'acc2', name: '公司支付宝', type: 'Alipay', balance: 45000.00 },
+  { id: 'acc3', name: '财务处备用金', type: 'Cash', balance: 5000.00 },
+];
+
+export const MOCK_FINANCE_TRANSACTIONS: FinanceTransaction[] = [
+  {
+    id: 'TR-20231122-001',
+    type: TransactionType.INCOME,
+    category: TransactionCategory.PROJECT_PAYMENT,
+    amount: 15800,
+    accountId: 'acc1',
+    accountName: '招商银行基本户',
+    projectId: 's1',
+    projectName: '别墅全屋智能改造',
+    description: '张三项目首笔款项',
+    date: '2023-11-22',
+    operator: '财务小李'
+  },
+  {
+    id: 'TR-20231121-002',
+    type: TransactionType.EXPENSE,
+    category: TransactionCategory.PROCUREMENT,
+    amount: 5500,
+    accountId: 'acc1',
+    accountName: '招商银行基本户',
+    description: 'Aqara 调光开关补货采购',
+    date: '2023-11-21',
+    operator: '采购小王'
+  },
+  {
+    id: 'TR-20231101-003',
+    type: TransactionType.EXPENSE,
+    category: TransactionCategory.RENT,
+    amount: 12000,
+    accountId: 'acc1',
+    accountName: '招商银行基本户',
+    description: '11月份办公室房租',
+    date: '2023-11-01',
+    operator: '系统自动'
+  }
+];
+
 export const MOCK_SUPPLIERS: Supplier[] = [
   {
     id: 'sup1',
@@ -52,17 +210,6 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     categories: ['cat_sub_1_1', 'cat_sub_1_2'],
     rating: 4.8,
     createdAt: '2023-01-10'
-  },
-  {
-    id: 'sup2',
-    name: '华东安防器材总代理',
-    contactPerson: '李总',
-    phone: '13788889999',
-    email: 'li@securityhub.com',
-    address: '上海市徐汇区漕河泾',
-    categories: ['cat_sub_2_1', 'cat_sub_2_2'],
-    rating: 4.5,
-    createdAt: '2023-02-15'
   }
 ];
 
@@ -217,7 +364,7 @@ export const MOCK_QUOTES: Quote[] = [
     customerId: 'c1',
     customerName: '张三',
     items: [
-      { productId: 'p1', name: '智能调光开关', price: 199, quantity: 5, total: 995 },
+      { productId: 'p1', name: '智能调调光开关', price: 199, quantity: 5, total: 995 },
       { productId: 'p3', name: '智能网关 V3', price: 399, quantity: 2, total: 798 }
     ],
     installationFee: 500,
@@ -228,24 +375,6 @@ export const MOCK_QUOTES: Quote[] = [
     totalAmount: 2593,
     status: QuoteStatus.APPROVED,
     createdAt: '2023-11-20T10:00:00Z'
-  },
-  {
-    id: 'Q-20231121-002',
-    solutionId: 's2',
-    solutionName: '三室一厅精装方案',
-    customerId: 'c2',
-    customerName: '李四',
-    items: [
-      { productId: 'p1', name: '智能调光开关', price: 199, quantity: 10, total: 1990 }
-    ],
-    installationFee: 800,
-    debugFee: 300,
-    shippingFee: 100,
-    tax: 200,
-    discount: 0,
-    totalAmount: 3390,
-    status: QuoteStatus.REVIEWING,
-    createdAt: '2023-11-21T14:30:00Z'
   }
 ];
 
@@ -261,18 +390,6 @@ export const MOCK_ORDERS: Order[] = [
     status: OrderStatus.EXECUTING,
     vouchers: ['https://picsum.photos/seed/pay1/400/300'],
     createdAt: '2023-11-20T11:00:00Z'
-  },
-  {
-    id: 'ORD-1002',
-    quoteId: 'Q-20231115-999',
-    customerId: 'c2',
-    customerName: '李四',
-    totalAmount: 15800,
-    paidAmount: 5000,
-    paymentStatus: 'Partial',
-    status: OrderStatus.PREPARING,
-    vouchers: ['https://picsum.photos/seed/pay2/400/300'],
-    createdAt: '2023-11-15T09:00:00Z'
   }
 ];
 
@@ -316,38 +433,6 @@ export const MOCK_SOLUTIONS: Solution[] = [
     type: 'Full House',
     statusHistory: [
       { status: ProjectStatus.DRAFT, timestamp: '2023-10-01 10:00', userName: '小陈' }
-    ]
-  }
-];
-
-export const MOCK_CONSTRUCTION: ConstructionProject[] = [
-  {
-    id: 'cp1',
-    solutionId: 's1',
-    orderId: 'ORD-1001',
-    solutionName: '别墅全屋智能改造',
-    customerName: '张三',
-    phases: [
-      {
-        id: 'ph1',
-        name: 'survey',
-        status: ConstructionPhaseStatus.COMPLETED,
-        plannedStartDate: '2023-11-20',
-        plannedEndDate: '2023-11-21',
-        supervisor: '李工',
-        progress: 100,
-        logs: []
-      },
-      {
-        id: 'ph2',
-        name: 'wiring',
-        status: ConstructionPhaseStatus.IN_PROGRESS,
-        plannedStartDate: '2023-11-22',
-        plannedEndDate: '2023-11-25',
-        supervisor: '王工',
-        progress: 45,
-        logs: []
-      }
     ]
   }
 ];

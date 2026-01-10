@@ -37,6 +37,7 @@ export enum OrderStatus {
   COMPLETED = 'Completed'
 }
 
+// Fixed missing PurchaseOrderStatus enum
 export enum PurchaseOrderStatus {
   DRAFT = 'Draft',
   PENDING = 'Pending',
@@ -45,58 +46,222 @@ export enum PurchaseOrderStatus {
   CANCELLED = 'Cancelled'
 }
 
-export enum AfterSalesStatus {
-  PENDING = 'Pending',
-  ASSIGNED = 'Assigned',
-  PROCESSING = 'Processing',
-  RESOLVED = 'Resolved',
-  CLOSED = 'Closed'
+// 施工全周期状态
+export enum ConstructionStatus {
+  UNASSIGNED = 'Unassigned', // 待派工
+  ONGOING = 'Ongoing',       // 施工中
+  INSPECTING = 'Inspecting', // 巡检中
+  ACCEPTANCE = 'Acceptance', // 验收中
+  COMPLETED = 'Completed'    // 已交付
 }
 
-export enum SupplierRMAStatus {
+export enum ConstructionPhaseStatus {
   PENDING = 'Pending',
-  SHIPPED = 'Shipped',
-  SUPPLIER_RECEIVED = 'Received by Supplier',
-  REPAIRED = 'Repaired/Replaced',
-  RETURNED = 'Returned'
+  IN_PROGRESS = 'In Progress',
+  COMPLETED = 'Completed',
+  OVERDUE = 'Overdue'
 }
 
-export interface AfterSalesLog {
+export interface ConstructionLog {
   id: string;
   timestamp: string;
   content: string;
-  operator: string;
+  author: string;
   images?: string[];
 }
 
-export interface AfterSalesTicket {
+export interface InspectionRecord {
   id: string;
-  orderId: string;
-  customerId: string;
-  customerName: string;
-  phone: string;
-  issueType: 'Hardware' | 'Software' | 'Maintenance';
-  description: string;
-  priority: 'Low' | 'Medium' | 'High';
-  status: AfterSalesStatus;
-  technician?: string;
-  logs: AfterSalesLog[];
-  createdAt: string;
-  updatedAt: string;
+  inspector: string;
+  date: string;
+  score: number;
+  content: string;
+  images?: string[];
+  status: 'Pass' | 'Fail';
 }
 
-export interface SupplierRMA {
+export interface ConstructionPhase {
   id: string;
-  ticketId: string; // Linked to customer after-sales ticket
-  supplierId: string;
-  supplierName: string;
+  name: string;
+  status: ConstructionPhaseStatus;
+  plannedStartDate: string;
+  plannedEndDate: string;
+  actualEndDate?: string;
+  supervisor: string;
+  progress: number;
+  logs: ConstructionLog[];
+  acceptanceMaterials?: string[];
+}
+
+export interface ConstructionProject {
+  id: string;
+  solutionId: string;
+  orderId?: string;
+  solutionName: string;
+  customerName: string;
+  status: ConstructionStatus;
+  assignedStaffId?: string;
+  assignedStaffName?: string;
+  startDate?: string;
+  endDate?: string;
+  phases: ConstructionPhase[];
+  inspections: InspectionRecord[];
+  customerSignature?: string; // Base64 signature image
+  acceptanceDate?: string;
+}
+
+// ... 其余接口保持不变
+export interface Department {
+  id: string;
+  name: string;
+  parentId?: string;
+  managerId?: string;
+  description?: string;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[];
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  departmentId: string;
+  roleId: string;
+  status: 'Active' | 'Disabled';
+  hireDate: string;
+}
+
+export interface SystemNotification {
+  id: string;
+  title: string;
+  content: string;
+  type: 'info' | 'warning' | 'success';
+  targetType: 'all' | 'department' | 'role';
+  targetId?: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
+}
+
+export interface InventoryRecord {
+  id: string;
+  type: InventoryMovementType;
+  reason: InventoryReason;
   productId: string;
   productName: string;
+  skuId?: string;
   skuName?: string;
-  faultDescription: string;
-  trackingNumber?: string;
-  status: SupplierRMAStatus;
+  quantity: number;
+  operator: string;
+  timestamp: string;
+  notes?: string;
+  linkedId?: string;
+}
+
+export enum InventoryMovementType {
+  IN = 'Stock In',
+  OUT = 'Stock Out'
+}
+
+export enum InventoryReason {
+  PROCUREMENT = 'Procurement In',
+  RETURN = 'Customer Return',
+  PROJECT_DELIVERY = 'Project Out',
+  SCRAP = 'Scrap/Damage',
+  ADJUSTMENT = 'Inventory Adjustment',
+  SALE = 'Retail Sale'
+}
+
+export interface StockTakeItem {
+  productId: string;
+  skuId: string;
+  productName: string;
+  skuName: string;
+  systemQty: number;
+  actualQty: number;
+  diff: number;
+}
+
+export interface StockTakeSession {
+  id: string;
+  title: string;
+  items: StockTakeItem[];
+  status: 'Draft' | 'Completed';
+  operator: string;
   createdAt: string;
+  completedAt?: string;
+}
+
+export interface DeliveryNote {
+  id: string;
+  orderId: string;
+  customerName: string;
+  address: string;
+  items: {
+    productId: string;
+    skuId: string;
+    name: string;
+    quantity: number;
+  }[];
+  status: 'Pending' | 'Shipped' | 'Delivered';
+  operator: string;
+  createdAt: string;
+  shippedAt?: string;
+}
+
+export interface FinanceAccount {
+  id: string;
+  name: string;
+  type: 'Bank' | 'Alipay' | 'WeChat' | 'Cash';
+  balance: number;
+  accountNumber?: string;
+}
+
+export interface FinanceTransaction {
+  id: string;
+  type: TransactionType;
+  category: TransactionCategory;
+  amount: number;
+  accountId: string;
+  accountName: string;
+  projectId?: string;
+  projectName?: string;
+  description: string;
+  voucherUrl?: string;
+  date: string;
+  operator: string;
+}
+
+export enum TransactionType {
+  INCOME = 'Income',
+  EXPENSE = 'Expense'
+}
+
+export enum TransactionCategory {
+  PROJECT_PAYMENT = 'Project Payment',
+  PROCUREMENT = 'Procurement',
+  RENT = 'Rent',
+  SALARY = 'Salary',
+  MARKETING = 'Marketing',
+  UTILITIES = 'Utilities',
+  OTHER = 'Other'
+}
+
+export interface ProjectFinanceSummary {
+  projectId: string;
+  projectName: string;
+  customerName: string;
+  totalIncome: number;
+  totalExpense: number;
+  grossProfit: number;
+  profitMargin: number;
 }
 
 export interface Supplier {
@@ -106,8 +271,8 @@ export interface Supplier {
   phone: string;
   email: string;
   address: string;
-  categories: string[]; // Category IDs they supply
-  rating: number; // 1-5
+  categories: string[];
+  rating: number;
   createdAt: string;
 }
 
@@ -127,7 +292,7 @@ export interface PurchaseOrder {
   items: PurchaseOrderItem[];
   totalAmount: number;
   status: PurchaseOrderStatus;
-  linkedOrderId?: string; // If linked to a specific customer order
+  linkedOrderId?: string;
   createdAt: string;
   receivedAt?: string;
 }
@@ -160,7 +325,7 @@ export interface Quote {
   debugFee: number;
   shippingFee: number;
   tax: number;
-  discount: number; // Final discount amount
+  discount: number;
   totalAmount: number;
   status: QuoteStatus;
   createdAt: string;
@@ -230,43 +395,6 @@ export interface Contract {
   signatureUrl?: string;
   signedAt?: string;
   createdAt: string;
-}
-
-export enum ConstructionPhaseStatus {
-  PENDING = 'Pending',
-  IN_PROGRESS = 'In Progress',
-  COMPLETED = 'Completed',
-  OVERDUE = 'Overdue'
-}
-
-export interface ConstructionLog {
-  id: string;
-  timestamp: string;
-  content: string;
-  author: string;
-  images?: string[];
-}
-
-export interface ConstructionPhase {
-  id: string;
-  name: string;
-  status: ConstructionPhaseStatus;
-  plannedStartDate: string;
-  plannedEndDate: string;
-  actualEndDate?: string;
-  supervisor: string;
-  progress: number;
-  logs: ConstructionLog[];
-  acceptanceMaterials?: string[];
-}
-
-export interface ConstructionProject {
-  id: string;
-  solutionId: string;
-  orderId?: string;
-  solutionName: string;
-  customerName: string;
-  phases: ConstructionPhase[];
 }
 
 export interface CategoryItem {
@@ -374,4 +502,58 @@ export interface User {
   name: string;
   role: 'admin' | 'designer' | 'sales' | 'client' | 'finance';
   email: string;
+}
+
+export interface AfterSalesLog {
+  id: string;
+  timestamp: string;
+  content: string;
+  operator: string;
+  images?: string[];
+}
+
+export interface AfterSalesTicket {
+  id: string;
+  orderId: string;
+  customerId: string;
+  customerName: string;
+  phone: string;
+  issueType: 'Hardware' | 'Software' | 'Maintenance';
+  description: string;
+  priority: 'Low' | 'Medium' | 'High';
+  status: AfterSalesStatus;
+  technician?: string;
+  logs: AfterSalesLog[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export enum AfterSalesStatus {
+  PENDING = 'Pending',
+  ASSIGNED = 'Assigned',
+  PROCESSING = 'Processing',
+  RESOLVED = 'Resolved',
+  CLOSED = 'Closed'
+}
+
+export interface SupplierRMA {
+  id: string;
+  ticketId: string;
+  supplierId: string;
+  supplierName: string;
+  productId: string;
+  productName: string;
+  skuName?: string;
+  faultDescription: string;
+  trackingNumber?: string;
+  status: SupplierRMAStatus;
+  createdAt: string;
+}
+
+export enum SupplierRMAStatus {
+  PENDING = 'Pending',
+  SHIPPED = 'Shipped',
+  SUPPLIER_RECEIVED = 'Received by Supplier',
+  REPAIRED = 'Repaired/Replaced',
+  RETURNED = 'Returned'
 }

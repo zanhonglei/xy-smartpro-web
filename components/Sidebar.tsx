@@ -29,7 +29,21 @@ import {
   Warehouse,
   ShieldAlert,
   Wrench,
-  Undo2
+  Undo2,
+  Wallet,
+  Landmark,
+  Receipt,
+  PieChart,
+  UserCog,
+  Building2,
+  Lock,
+  BellRing,
+  Cpu,
+  Archive,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ClipboardCheck,
+  PackageCheck
 } from 'lucide-react';
 import { useLanguage } from '../App';
 
@@ -48,7 +62,7 @@ interface MenuItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) => {
   const { t } = useLanguage();
-  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['solution-mgmt', 'product-mgmt', 'e-contract', 'customer-mgmt', 'sales-mgmt', 'procurement-mgmt', 'after-sales-mgmt']));
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['solution-mgmt', 'product-mgmt', 'e-contract', 'customer-mgmt', 'sales-mgmt', 'procurement-mgmt', 'after-sales-mgmt', 'finance-mgmt', 'system-mgmt', 'inventory-mgmt']));
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', icon: <LayoutDashboard size={18} />, label: t('dashboard') },
@@ -91,6 +105,28 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) 
       ]
     },
     { 
+      id: 'inventory-mgmt', 
+      icon: <Archive size={18} />, 
+      label: t('inventoryMgmt'),
+      children: [
+        { id: 'inventory-in', icon: <ArrowDownToLine size={16} />, label: t('stockIn') },
+        { id: 'inventory-out', icon: <ArrowUpFromLine size={16} />, label: t('stockOut') },
+        { id: 'inventory-take', icon: <ClipboardCheck size={16} />, label: t('stockTake') },
+        { id: 'inventory-delivery', icon: <PackageCheck size={16} />, label: t('deliveryNote') },
+      ]
+    },
+    { 
+      id: 'finance-mgmt', 
+      icon: <Wallet size={18} />, 
+      label: t('financeMgmt'),
+      children: [
+        { id: 'finance-projects', icon: <PieChart size={16} />, label: t('projectFinance') },
+        { id: 'finance-daily', icon: <Receipt size={16} />, label: t('dailyFinance') },
+        { id: 'finance-history', icon: <FileText size={16} />, label: t('cashFlow') },
+        { id: 'finance-balance', icon: <Landmark size={16} />, label: t('balanceMgmt') },
+      ]
+    },
+    { 
       id: 'after-sales-mgmt', 
       icon: <ShieldAlert size={18} />, 
       label: t('afterSalesMgmt'),
@@ -121,6 +157,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) 
       ]
     },
     { id: 'projects', icon: <Truck size={18} />, label: t('construction') },
+    { 
+      id: 'system-mgmt', 
+      icon: <Settings size={18} />, 
+      label: t('systemMgmt'),
+      children: [
+        { id: 'sys-employees', icon: <UserCog size={16} />, label: t('employeeMgmt') },
+        { id: 'sys-departments', icon: <Building2 size={16} />, label: t('deptMgmt') },
+        { id: 'sys-roles', icon: <Lock size={16} />, label: t('roleMgmt') },
+        { id: 'sys-notifications', icon: <BellRing size={16} />, label: t('notificationMgmt') },
+      ]
+    },
   ];
 
   const toggleExpand = (id: string) => {
@@ -150,7 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) 
               </div>
               {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
-            <div className={`mt-1 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`mt-1 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="ml-4 pl-4 border-l border-slate-800/50 space-y-1 py-1">
                 {item.children.map(child => renderMenuItem(child, true))}
               </div>
