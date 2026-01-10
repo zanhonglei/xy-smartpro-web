@@ -6,7 +6,7 @@ import {
   Brand, Customer, CustomerStatus, Quote, Order, QuoteStatus, OrderStatus,
   Supplier, PurchaseOrder, PurchaseOrderStatus, AfterSalesTicket, AfterSalesStatus, SupplierRMAStatus, SupplierRMA,
   FinanceAccount, FinanceTransaction, TransactionType, TransactionCategory,
-  Employee, Department, Role, SystemNotification, ConstructionStatus
+  Employee, Department, Role, SystemNotification, ConstructionStatus, VectorFloorPlanData
 } from './types';
 import * as LucideIcons from 'lucide-react';
 
@@ -34,6 +34,8 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   '传感器': <LucideIcons.Zap size={18} />,
   '中控网关': <LucideIcons.Cpu size={18} />,
 };
+
+const MOCK_VECTOR_DATA: VectorFloorPlanData = {"height":375,"raw_data":[{"class":"wall","x1":120,"x2":126,"y1":221,"y2":307},{"class":"wall","x1":120,"x2":171,"y1":221,"y2":227},{"class":"wall","x1":351,"x2":357,"y1":52,"y2":144},{"class":"wall","x1":152,"x2":158,"y1":43,"y2":144},{"class":"wall","x1":373,"x2":379,"y1":140,"y2":319},{"class":"wall","x1":280,"x2":357,"y1":52,"y2":58},{"class":"wall","x1":198,"x2":284,"y1":38,"y2":44},{"class":"wall","x1":291,"x2":297,"y1":175,"y2":304},{"class":"wall","x1":198,"x2":296,"y1":331,"y2":336},{"class":"wall","x1":139,"x2":202,"y1":314,"y2":319},{"class":"wall","x1":120,"x2":145,"y1":301,"y2":307},{"class":"wall","x1":319,"x2":379,"y1":313,"y2":319},{"class":"wall","x1":198,"x2":203,"y1":184,"y2":303},{"class":"wall","x1":323,"x2":378,"y1":208,"y2":212},{"class":"wall","x1":319,"x2":325,"y1":301,"y2":319},{"class":"wall","x1":153,"x2":201,"y1":92,"y2":96},{"class":"wall","x1":199,"x2":284,"y1":85,"y2":88},{"class":"wall","x1":139,"x2":146,"y1":301,"y2":319},{"class":"wall","x1":197,"x2":203,"y1":314,"y2":335},{"class":"wall","x1":166,"x2":202,"y1":184,"y2":188},{"class":"wall","x1":293,"x2":325,"y1":301,"y2":307},{"class":"wall","x1":152,"x2":173,"y1":140,"y2":145},{"class":"wall","x1":291,"x2":297,"y1":303,"y2":335},{"class":"wall","x1":292,"x2":326,"y1":174,"y2":178},{"class":"wall","x1":166,"x2":171,"y1":141,"y2":227},{"class":"wall","x1":171,"x2":203,"y1":140,"y2":144},{"class":"wall","x1":198,"x2":203,"y1":40,"y2":144},{"class":"wall","x1":280,"x2":378,"y1":140,"y2":145},{"class":"wall","x1":280,"x2":285,"y1":54,"y2":144},{"class":"wall","x1":323,"x2":326,"y1":141,"y2":211},{"class":"wall","x1":199,"x2":294,"y1":301,"y2":304},{"class":"wall","x1":197,"x2":203,"y1":38,"y2":48},{"class":"wall","x1":197,"x2":202,"y1":302,"y2":318},{"class":"wall","x1":166,"x2":171,"y1":186,"y2":227},{"class":"wall","x1":279,"x2":285,"y1":86,"y2":144},{"class":"wall","x1":323,"x2":326,"y1":176,"y2":211},{"class":"wall","x1":322,"x2":326,"y1":140,"y2":176},{"class":"wall","x1":197,"x2":203,"y1":40,"y2":89},{"class":"wall","x1":198,"x2":202,"y1":90,"y2":144},{"class":"wall","x1":286,"x2":296,"y1":326,"y2":335},{"class":"wall","x1":280,"x2":323,"y1":140,"y2":145},{"class":"wall","x1":356,"x2":380,"y1":140,"y2":145}],"rooms":[{"coordinates":[[203.12,314.06],[202.77,304.91],[221.08,304.91],[274.34,305.6],[291.74,304.91],[291.74,326.31],[203.12,331.32]],"room_type":"livingroom"}],"unit":4.5,"width":500};
 
 export const MOCK_PRODUCTS: Product[] = [
   // --- Aqara (绿米) ---
@@ -422,7 +424,8 @@ export const MOCK_SOLUTIONS: Solution[] = [
     type: 'Full House',
     statusHistory: [
       { status: ProjectStatus.DRAFT, timestamp: '2023-10-01 10:00', userName: '小陈' }
-    ]
+    ],
+    vectorData: MOCK_VECTOR_DATA
   }
 ];
 

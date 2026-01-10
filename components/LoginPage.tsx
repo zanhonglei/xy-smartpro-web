@@ -13,7 +13,7 @@ import {
   EyeOff,
   User as UserIcon,
   CheckCircle2,
-  // Added missing Loader2 icon import
+  // Fix: Added missing Loader2 icon import
   Loader2
 } from 'lucide-react';
 
@@ -166,7 +166,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-2xl shadow-blue-500/30 hover:bg-blue-500 active:scale-95 transition-all flex items-center justify-center space-x-3"
                  >
                     {isSubmitting ? (
-                      // Fixed: Loader2 is now correctly imported
                       <Loader2 className="animate-spin" size={24} />
                     ) : (
                       <>

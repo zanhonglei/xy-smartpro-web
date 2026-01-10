@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VectorFloorPlanData, DevicePoint, Product } from '../types';
 import { CATEGORY_ICONS } from '../constants';
-// Add missing 'X' icon import to fix line 193 error
+// Fix: Added missing 'X' icon import from lucide-react
 import { Trash2, Info, Power, ZoomIn, ZoomOut, Maximize, MousePointer2, X } from 'lucide-react';
 
 interface VectorFloorPlanProps {
@@ -22,6 +22,15 @@ const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Defensive check for data
+  if (!data || !data.raw_data) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-900">
+         <p className="font-bold uppercase tracking-widest text-xs">Waiting for Vector Data...</p>
+      </div>
+    );
+  }
 
   const getProductById = (id: string) => products.find(p => p.id === id);
 

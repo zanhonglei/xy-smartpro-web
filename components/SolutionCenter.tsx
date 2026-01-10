@@ -29,11 +29,17 @@ import {
   ChevronLeft,
   Calculator,
   Loader2,
-  Cpu
+  Cpu,
+  Eye,
+  Smartphone,
+  Copy,
+  Check
 } from 'lucide-react';
+import ClientSolutionPreview from './ClientSolutionPreview';
 
 interface SolutionCenterProps {
   solutions: Solution[];
+  products: any[];
   currentUser: User;
   onUpdate: (solutions: Solution[]) => void;
   onSaveAsTemplate: (template: SolutionTemplate) => void;
@@ -41,13 +47,15 @@ interface SolutionCenterProps {
   onGenerateQuote: (solution: Solution) => void;
 }
 
-const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser, onUpdate, onSaveAsTemplate, onEditSolution, onGenerateQuote }) => {
+const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, products, currentUser, onUpdate, onSaveAsTemplate, onEditSolution, onGenerateQuote }) => {
   const { t, lang } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'ALL'>('ALL');
   const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
@@ -117,51 +125,16 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
     }
   };
 
-  const handleExport = () => {
-    setIsExporting(true);
-    setTimeout(() => {
-      setIsExporting(false);
-      alert(t('exporting') + " Done!");
-    }, 2000);
+  const handleShare = (solution: Solution) => {
+    setSelectedSolution(solution);
+    setIsShareModalOpen(true);
   };
 
-  const handleShare = () => {
-    const dummyLink = `https://smartpro.app/share/${selectedSolution?.id}`;
-    navigator.clipboard.writeText(dummyLink);
-    alert(t('copyLinkSuccess'));
-  };
-
-  const handleSaveAsTemplate = () => {
-    if (!selectedSolution) return;
-    
-    const roomGroups: Record<string, any[]> = {};
-    selectedSolution.devices.forEach(d => {
-      if (!roomGroups[d.roomName]) roomGroups[d.roomName] = [];
-      roomGroups[d.roomName].push(d.productId);
-    });
-
-    const templateRooms: TemplateRoom[] = Object.entries(roomGroups).map(([name, productIds]) => {
-      const counts: Record<string, number> = {};
-      productIds.forEach(id => counts[id] = (counts[id] || 0) + 1);
-      
-      const roomObj = selectedSolution.rooms.find(r => r.name === name);
-      return {
-        id: Math.random().toString(36).substr(2, 9),
-        roomType: roomObj?.type || 'living',
-        products: Object.entries(counts).map(([productId, quantity]) => ({ productId, quantity }))
-      };
-    });
-
-    const template: SolutionTemplate = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: `${selectedSolution.name} Template`,
-      description: `Template generated from solution ${selectedSolution.id}`,
-      rooms: templateRooms,
-      totalPrice: selectedSolution.totalPrice
-    };
-
-    onSaveAsTemplate(template);
-    alert(lang === 'zh' ? "方案已另存为模板！" : "Solution saved as template!");
+  const copyToClipboard = () => {
+    const link = `https://smartpro.app/p/${selectedSolution?.id}`;
+    navigator.clipboard.writeText(link);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   return (
@@ -229,8 +202,8 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
             {paginatedSolutions.map(solution => (
               <div 
                 key={solution.id}
-                onClick={() => { setSelectedSolution(solution); setIsDetailModalOpen(true); }}
                 className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all p-8 flex flex-col group cursor-pointer"
+                onClick={() => { setSelectedSolution(solution); setIsDetailModalOpen(true); }}
               >
                 <div className="aspect-video mb-6 rounded-3xl overflow-hidden bg-slate-50 border relative">
                   <img src={solution.floorPlanUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="" />
@@ -245,12 +218,28 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
                        </span>
                     )}
                   </div>
+                  <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-3 backdrop-blur-sm">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setSelectedSolution(solution); setIsPreviewMode(true); }}
+                      className="p-4 bg-white rounded-2xl text-blue-600 shadow-xl hover:scale-110 transition-transform"
+                      title="Preview for Client"
+                    >
+                      <Eye size={24} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onEditSolution(solution); }}
+                      className="p-4 bg-white rounded-2xl text-slate-800 shadow-xl hover:scale-110 transition-transform"
+                      title="Edit Design"
+                    >
+                      <Edit size={24} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex-1 space-y-4">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-xl font-bold text-slate-800">{solution.name}</h3>
+                      <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{solution.name}</h3>
                       <p className="text-sm text-slate-500 font-medium">{solution.customerName}</p>
                     </div>
                   </div>
@@ -272,9 +261,12 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('price')}</p>
                     <p className="text-2xl font-black text-blue-600">${solution.totalPrice.toLocaleString()}</p>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-2xl text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                    <ChevronRight size={20} />
-                  </div>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleShare(solution); }}
+                    className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                  >
+                    <Share2 size={20} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -295,8 +287,8 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
                 {paginatedSolutions.map(solution => (
                   <tr 
                     key={solution.id} 
-                    onClick={() => { setSelectedSolution(solution); setIsDetailModalOpen(true); }}
                     className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                    onClick={() => { setSelectedSolution(solution); setIsDetailModalOpen(true); }}
                   >
                     <td className="px-6 py-4 font-bold text-slate-800">
                        <div className="flex items-center space-x-2">
@@ -312,7 +304,15 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
                     </td>
                     <td className="px-6 py-4 font-black text-blue-600">${solution.totalPrice.toLocaleString()}</td>
                     <td className="px-6 py-4 text-right">
-                      <ChevronRight size={18} className="inline text-slate-300 group-hover:text-blue-500" />
+                      <div className="flex items-center justify-end space-x-2">
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedSolution(solution); setIsPreviewMode(true); }} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                           <Eye size={18} />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); handleShare(solution); }} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                           <Share2 size={18} />
+                        </button>
+                        <ChevronRight size={18} className="inline text-slate-300 group-hover:text-blue-500" />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -322,7 +322,69 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
         )}
       </div>
 
-      {isDetailModalOpen && selectedSolution && (
+      {/* Share Modal */}
+      {isShareModalOpen && selectedSolution && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
+           <div className="bg-white rounded-[3rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col border border-white/20">
+              <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                   <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                      <Share2 size={24} />
+                   </div>
+                   <div>
+                      <h3 className="text-xl font-black text-slate-900">分享方案给客户</h3>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Share to Customer</p>
+                   </div>
+                </div>
+                <button onClick={() => setIsShareModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-200 transition-all">
+                  <X size={28} />
+                </button>
+              </div>
+
+              <div className="p-10 space-y-8 text-center">
+                 <div className="w-48 h-48 bg-slate-50 rounded-[2.5rem] border-2 border-slate-100 flex items-center justify-center mx-auto p-4 group hover:border-blue-500 transition-all">
+                    {/* Mock QR Code */}
+                    <div className="w-full h-full border-4 border-slate-900 bg-white grid grid-cols-8 grid-rows-8 gap-1 p-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                       {[...Array(64)].map((_, i) => (
+                         <div key={i} className={`rounded-sm ${Math.random() > 0.6 ? 'bg-slate-900' : 'bg-transparent'}`} />
+                       ))}
+                    </div>
+                 </div>
+                 <p className="text-sm font-bold text-slate-500 px-8">扫码或点击下方链接，客户即可进入沉浸式 3D 预览页面查看定制化方案</p>
+                 
+                 <div className="space-y-4">
+                    <div className="flex items-center space-x-2 bg-slate-100 p-4 rounded-2xl border border-slate-200">
+                       <Smartphone size={18} className="text-slate-400" />
+                       <span className="flex-1 text-xs font-black text-slate-700 truncate">https://smartpro.app/p/{selectedSolution.id}</span>
+                       <button 
+                        onClick={copyToClipboard}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${isCopied ? 'bg-green-500 text-white shadow-lg' : 'bg-white text-slate-900 hover:bg-slate-50 border shadow-sm'}`}
+                       >
+                          {isCopied ? <Check size={12} /> : <Copy size={12} />}
+                       </button>
+                    </div>
+                 </div>
+
+                 <div className="pt-4 flex space-x-3">
+                    <button className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all">存为图片</button>
+                    <button onClick={() => setIsShareModalOpen(false)} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-xl">完成</button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* High-Fidelity Client Preview */}
+      {isPreviewMode && selectedSolution && (
+        <ClientSolutionPreview 
+          solution={selectedSolution} 
+          products={products}
+          onClose={() => setIsPreviewMode(false)}
+        />
+      )}
+
+      {/* Detail Modal (Internal) */}
+      {isDetailModalOpen && selectedSolution && !isPreviewMode && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white rounded-[3rem] w-full max-w-6xl h-[90vh] shadow-2xl overflow-hidden flex flex-col border">
             <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
@@ -337,11 +399,18 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
               </div>
               <div className="flex items-center space-x-2">
                 <button 
+                  onClick={() => { setSelectedSolution(selectedSolution); setIsPreviewMode(true); }}
+                  className="flex items-center space-x-2 px-6 py-2 bg-slate-100 text-slate-900 rounded-xl font-bold hover:bg-white transition-all shadow-sm"
+                >
+                  <Eye size={18} />
+                  <span>客户预览</span>
+                </button>
+                <button 
                   onClick={() => { onEditSolution(selectedSolution); setIsDetailModalOpen(false); }}
                   className="flex items-center space-x-2 px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-all shadow-md"
                 >
                   <Edit size={18} />
-                  <span>{t('edit')}</span>
+                  <span>编辑设计</span>
                 </button>
                 {selectedSolution.status === ProjectStatus.CONFIRMED && (
                    <button 
@@ -363,7 +432,6 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
                 <div className="aspect-video rounded-[2rem] overflow-hidden border shadow-inner relative bg-slate-900 flex items-center justify-center p-8">
                   {selectedSolution.vectorData ? (
                      <div className="scale-125 transform pointer-events-none opacity-40">
-                        {/* Mock mini preview of the vector data */}
                         <svg width="300" height="200" viewBox="0 0 500 375">
                            {selectedSolution.vectorData.raw_data.filter(x=>x.class==='wall').map((w,i)=>(
                               <rect key={i} x={w.x1} y={w.y1} width={Math.abs(w.x2-w.x1)||2} height={Math.abs(w.y2-w.y1)||2} fill="white" />
@@ -378,7 +446,7 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
                   )}
                   <div className="absolute inset-0 flex items-center justify-center">
                      <p className="bg-slate-900/80 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10 text-white text-xs font-black uppercase tracking-widest">
-                        Preview Only · Click Edit to Design
+                        Internal Preview · Use Client Preview for Customer Presentation
                      </p>
                   </div>
                 </div>
@@ -401,7 +469,7 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
                   <div className="grid grid-cols-1 gap-2">
                     {[ProjectStatus.DRAFT, ProjectStatus.PENDING, ProjectStatus.CONFIRMED].map(st => (
                       <button 
-                        key={st}
+                        key={st} 
                         onClick={() => handleStatusChange(selectedSolution.id, st)}
                         className={`flex items-center justify-between px-4 py-3 rounded-xl border font-bold text-sm transition-all ${
                           selectedSolution.status === st 

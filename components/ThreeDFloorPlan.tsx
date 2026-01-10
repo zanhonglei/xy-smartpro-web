@@ -21,7 +21,7 @@ const ThreeDFloorPlan: React.FC<ThreeDFloorPlanProps> = ({ data, devices, produc
   const controlsRef = useRef<OrbitControls | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !data || !data.raw_data) return;
 
     // Initialize Scene
     const scene = new THREE.Scene();
@@ -93,7 +93,7 @@ const ThreeDFloorPlan: React.FC<ThreeDFloorPlanProps> = ({ data, devices, produc
   }, [data]);
 
   useEffect(() => {
-    if (!sceneRef.current) return;
+    if (!sceneRef.current || !data) return;
     // Clear old devices
     const deviceGroup = sceneRef.current.getObjectByName('deviceGroup');
     if (deviceGroup) sceneRef.current.remove(deviceGroup);
@@ -149,6 +149,14 @@ const ThreeDFloorPlan: React.FC<ThreeDFloorPlanProps> = ({ data, devices, produc
       scene.add(mesh);
     });
   };
+
+  if (!data || !data.raw_data) {
+     return (
+        <div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-950">
+           <p className="font-black uppercase tracking-widest text-xs animate-pulse">Initializing 3D Pipeline...</p>
+        </div>
+     );
+  }
 
   return (
     <div className="relative w-full h-full group bg-slate-900 overflow-hidden rounded-[2.5rem] border-4 border-white/5">
