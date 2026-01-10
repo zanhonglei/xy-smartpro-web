@@ -4,7 +4,7 @@ import {
   Product, CategoryItem, ProjectStatus, Solution, User, 
   ConstructionProject, ConstructionPhaseStatus, SolutionTemplate, 
   Brand, Customer, CustomerStatus, Quote, Order, QuoteStatus, OrderStatus,
-  Supplier, PurchaseOrder, PurchaseOrderStatus
+  Supplier, PurchaseOrder, PurchaseOrderStatus, AfterSalesTicket, AfterSalesStatus, SupplierRMAStatus, SupplierRMA
 } from './types';
 import * as LucideIcons from 'lucide-react';
 
@@ -78,17 +78,39 @@ export const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [
     status: PurchaseOrderStatus.RECEIVED,
     createdAt: '2023-11-01',
     receivedAt: '2023-11-05'
-  },
+  }
+];
+
+export const MOCK_AFTER_SALES: AfterSalesTicket[] = [
   {
-    id: 'PO-20231120-002',
-    supplierId: 'sup2',
-    supplierName: '华东安防器材总代理',
-    items: [
-      { productId: 'p2', name: '4K 室外摄像头', quantity: 20, cost: 550, total: 11000 }
+    id: 'AST-20231122-001',
+    orderId: 'ORD-1001',
+    customerId: 'c1',
+    customerName: '张三',
+    phone: '13800138000',
+    issueType: 'Hardware',
+    description: '客厅调光开关无法正常开启，App显示离线。',
+    priority: 'High',
+    status: AfterSalesStatus.PENDING,
+    logs: [
+      { id: 'l1', timestamp: '2023-11-22 10:00', content: '客户致电报修，反馈开关离线。', operator: '客服小王' }
     ],
-    totalAmount: 11000,
-    status: PurchaseOrderStatus.PENDING,
-    createdAt: '2023-11-20'
+    createdAt: '2023-11-22',
+    updatedAt: '2023-11-22'
+  }
+];
+
+export const MOCK_RMAS: SupplierRMA[] = [
+  {
+    id: 'RMA-20231122-100',
+    ticketId: 'AST-20231122-001',
+    supplierId: 'sup1',
+    supplierName: '深圳智能配件批发中心',
+    productId: 'p1',
+    productName: '智能调光开关',
+    faultDescription: '控制电路烧毁',
+    status: SupplierRMAStatus.PENDING,
+    createdAt: '2023-11-22'
   }
 ];
 

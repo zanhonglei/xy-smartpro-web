@@ -45,6 +45,60 @@ export enum PurchaseOrderStatus {
   CANCELLED = 'Cancelled'
 }
 
+export enum AfterSalesStatus {
+  PENDING = 'Pending',
+  ASSIGNED = 'Assigned',
+  PROCESSING = 'Processing',
+  RESOLVED = 'Resolved',
+  CLOSED = 'Closed'
+}
+
+export enum SupplierRMAStatus {
+  PENDING = 'Pending',
+  SHIPPED = 'Shipped',
+  SUPPLIER_RECEIVED = 'Received by Supplier',
+  REPAIRED = 'Repaired/Replaced',
+  RETURNED = 'Returned'
+}
+
+export interface AfterSalesLog {
+  id: string;
+  timestamp: string;
+  content: string;
+  operator: string;
+  images?: string[];
+}
+
+export interface AfterSalesTicket {
+  id: string;
+  orderId: string;
+  customerId: string;
+  customerName: string;
+  phone: string;
+  issueType: 'Hardware' | 'Software' | 'Maintenance';
+  description: string;
+  priority: 'Low' | 'Medium' | 'High';
+  status: AfterSalesStatus;
+  technician?: string;
+  logs: AfterSalesLog[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupplierRMA {
+  id: string;
+  ticketId: string; // Linked to customer after-sales ticket
+  supplierId: string;
+  supplierName: string;
+  productId: string;
+  productName: string;
+  skuName?: string;
+  faultDescription: string;
+  trackingNumber?: string;
+  status: SupplierRMAStatus;
+  createdAt: string;
+}
+
 export interface Supplier {
   id: string;
   name: string;

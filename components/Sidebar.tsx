@@ -26,7 +26,10 @@ import {
   ShoppingCart,
   Truck as ProcurementIcon,
   Factory,
-  Warehouse
+  Warehouse,
+  ShieldAlert,
+  Wrench,
+  Undo2
 } from 'lucide-react';
 import { useLanguage } from '../App';
 
@@ -45,7 +48,7 @@ interface MenuItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) => {
   const { t } = useLanguage();
-  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['solution-mgmt', 'product-mgmt', 'e-contract', 'customer-mgmt', 'sales-mgmt', 'procurement-mgmt']));
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['solution-mgmt', 'product-mgmt', 'e-contract', 'customer-mgmt', 'sales-mgmt', 'procurement-mgmt', 'after-sales-mgmt']));
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', icon: <LayoutDashboard size={18} />, label: t('dashboard') },
@@ -85,6 +88,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) 
         { id: 'purchase-orders', icon: <FileText size={16} />, label: t('purchaseOrder') },
         { id: 'stocking-orders', icon: <Warehouse size={16} />, label: t('stockingOrder') },
         { id: 'suppliers', icon: <Factory size={16} />, label: t('supplierMgmt') },
+      ]
+    },
+    { 
+      id: 'after-sales-mgmt', 
+      icon: <ShieldAlert size={18} />, 
+      label: t('afterSalesMgmt'),
+      children: [
+        { id: 'after-sales-tickets', icon: <Wrench size={16} />, label: t('afterSalesTicket') },
+        { id: 'supplier-rma', icon: <Undo2 size={16} />, label: t('supplierAfterSales') },
       ]
     },
     { 
@@ -139,7 +151,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) 
               {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
             <div className={`mt-1 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-              <div className="ml-4 pl-4 border-l border-slate-800 space-y-1 py-1">
+              <div className="ml-4 pl-4 border-l border-slate-800/50 space-y-1 py-1">
                 {item.children.map(child => renderMenuItem(child, true))}
               </div>
             </div>
@@ -162,13 +174,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) 
   };
 
   return (
-    <div className="w-64 h-full bg-slate-900 text-white flex flex-col fixed left-0 top-0 z-50">
+    <div className="w-64 h-full bg-slate-900 text-white flex flex-col fixed left-0 top-0 z-50 border-r border-slate-800/50">
       <div className="p-8 flex items-center space-x-3 border-b border-slate-800">
         <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg">S</div>
         <span className="text-2xl font-black tracking-tighter">SmartPro</span>
       </div>
       
-      <nav className="flex-1 mt-8 px-4 space-y-2 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 mt-8 px-4 space-y-2 overflow-y-auto custom-scrollbar dark-scrollbar">
         {menuItems.map(item => renderMenuItem(item))}
       </nav>
 
