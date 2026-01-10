@@ -23,7 +23,10 @@ import {
   UserCheck,
   UserPlus,
   BadgeDollarSign,
-  ShoppingCart
+  ShoppingCart,
+  Truck as ProcurementIcon,
+  Factory,
+  Warehouse
 } from 'lucide-react';
 import { useLanguage } from '../App';
 
@@ -42,7 +45,7 @@ interface MenuItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) => {
   const { t } = useLanguage();
-  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['solution-mgmt', 'product-mgmt', 'e-contract', 'customer-mgmt', 'sales-mgmt']));
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['solution-mgmt', 'product-mgmt', 'e-contract', 'customer-mgmt', 'sales-mgmt', 'procurement-mgmt']));
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', icon: <LayoutDashboard size={18} />, label: t('dashboard') },
@@ -72,6 +75,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) 
       children: [
         { id: 'quotes', icon: <FileText size={16} />, label: t('quotes') },
         { id: 'orders', icon: <ShoppingCart size={16} />, label: t('orders') },
+      ]
+    },
+    { 
+      id: 'procurement-mgmt', 
+      icon: <ProcurementIcon size={18} />, 
+      label: t('procurementMgmt'),
+      children: [
+        { id: 'purchase-orders', icon: <FileText size={16} />, label: t('purchaseOrder') },
+        { id: 'stocking-orders', icon: <Warehouse size={16} />, label: t('stockingOrder') },
+        { id: 'suppliers', icon: <Factory size={16} />, label: t('supplierMgmt') },
       ]
     },
     { 
@@ -125,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) 
               </div>
               {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
-            <div className={`mt-1 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`mt-1 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="ml-4 pl-4 border-l border-slate-800 space-y-1 py-1">
                 {item.children.map(child => renderMenuItem(child, true))}
               </div>

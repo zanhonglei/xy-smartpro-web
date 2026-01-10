@@ -37,6 +37,56 @@ export enum OrderStatus {
   COMPLETED = 'Completed'
 }
 
+export enum PurchaseOrderStatus {
+  DRAFT = 'Draft',
+  PENDING = 'Pending',
+  ORDERED = 'Ordered',
+  RECEIVED = 'Received',
+  CANCELLED = 'Cancelled'
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contactPerson: string;
+  phone: string;
+  email: string;
+  address: string;
+  categories: string[]; // Category IDs they supply
+  rating: number; // 1-5
+  createdAt: string;
+}
+
+export interface PurchaseOrderItem {
+  productId: string;
+  skuId?: string;
+  name: string;
+  quantity: number;
+  cost: number;
+  total: number;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  items: PurchaseOrderItem[];
+  totalAmount: number;
+  status: PurchaseOrderStatus;
+  linkedOrderId?: string; // If linked to a specific customer order
+  createdAt: string;
+  receivedAt?: string;
+}
+
+export interface StockingOrder {
+  id: string;
+  items: PurchaseOrderItem[];
+  totalAmount: number;
+  status: PurchaseOrderStatus;
+  reason: string;
+  createdAt: string;
+}
+
 export interface QuoteItem {
   productId: string;
   name: string;

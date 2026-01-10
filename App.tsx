@@ -16,6 +16,9 @@ import CustomerManager from './components/CustomerManager';
 import QuoteManager from './components/QuoteManager';
 import OrderManager from './components/OrderManager';
 import Dashboard from './components/Dashboard';
+import SupplierManager from './components/SupplierManager';
+import PurchaseOrderManager from './components/PurchaseOrderManager';
+import StockingOrderManager from './components/StockingOrderManager';
 import { 
   MOCK_PRODUCTS, 
   MOCK_SOLUTIONS, 
@@ -26,7 +29,9 @@ import {
   MOCK_BRANDS,
   MOCK_CUSTOMERS,
   MOCK_QUOTES,
-  MOCK_ORDERS
+  MOCK_ORDERS,
+  MOCK_SUPPLIERS,
+  MOCK_PURCHASE_ORDERS
 } from './constants';
 import { 
   Solution, 
@@ -48,7 +53,10 @@ import {
   Order,
   QuoteStatus,
   OrderStatus,
-  CustomerStatus
+  CustomerStatus,
+  Supplier,
+  PurchaseOrder,
+  StockingOrder
 } from './types';
 import { 
   ChevronRight, 
@@ -82,6 +90,9 @@ const App: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>(MOCK_CUSTOMERS);
   const [quotes, setQuotes] = useState<Quote[]>(MOCK_QUOTES);
   const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
+  const [suppliers, setSuppliers] = useState<Supplier[]>(MOCK_SUPPLIERS);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(MOCK_PURCHASE_ORDERS);
+  const [stockingOrders, setStockingOrders] = useState<StockingOrder[]>([]);
   const [user] = useState<User>(MOCK_USER);
   const [editingSolution, setEditingSolution] = useState<Solution | null>(null);
 
@@ -248,6 +259,9 @@ const App: React.FC = () => {
       case 'templates': return t('solutionTemplates');
       case 'quotes': return t('quotes');
       case 'orders': return t('orders');
+      case 'purchase-orders': return t('purchaseOrder');
+      case 'stocking-orders': return t('stockingOrder');
+      case 'suppliers': return t('supplierMgmt');
       case 'customer-pool': return t('customerPool');
       case 'my-customers': return t('myCustomers');
       case 'dashboard': return t('dashboard');
@@ -306,6 +320,10 @@ const App: React.FC = () => {
             
             {currentTab === 'quotes' && <QuoteManager quotes={quotes} solutions={solutions} products={products} currentUser={user} onUpdate={setQuotes} onCreateOrder={handleCreateOrder} />}
             {currentTab === 'orders' && <OrderManager orders={orders} currentUser={user} onUpdate={setOrders} onConfirmPayment={handleConfirmPayment} />}
+
+            {currentTab === 'purchase-orders' && <PurchaseOrderManager purchaseOrders={purchaseOrders} suppliers={suppliers} products={products} onUpdate={setPurchaseOrders} />}
+            {currentTab === 'stocking-orders' && <StockingOrderManager stockingOrders={stockingOrders} products={products} onUpdate={setStockingOrders} />}
+            {currentTab === 'suppliers' && <SupplierManager suppliers={suppliers} categories={categories} onUpdate={setSuppliers} />}
 
             {currentTab === 'customer-pool' && <CustomerManager customers={customers} onUpdate={setCustomers} currentUser={user} type="pool" />}
             {currentTab === 'my-customers' && <CustomerManager customers={customers} onUpdate={setCustomers} currentUser={user} type="mine" />}

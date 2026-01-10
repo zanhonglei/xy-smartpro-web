@@ -3,7 +3,8 @@ import React from 'react';
 import { 
   Product, CategoryItem, ProjectStatus, Solution, User, 
   ConstructionProject, ConstructionPhaseStatus, SolutionTemplate, 
-  Brand, Customer, CustomerStatus, Quote, Order, QuoteStatus, OrderStatus 
+  Brand, Customer, CustomerStatus, Quote, Order, QuoteStatus, OrderStatus,
+  Supplier, PurchaseOrder, PurchaseOrderStatus
 } from './types';
 import * as LucideIcons from 'lucide-react';
 
@@ -38,6 +39,57 @@ export const MOCK_BRANDS: Brand[] = [
   { id: 'b1', name: 'Aqara', logo: 'https://picsum.photos/seed/aqara/100/100', description: '专注全屋智能领域的领军品牌。' },
   { id: 'b2', name: '海康威视', logo: 'https://picsum.photos/seed/hik/100/100', description: '全球领先的智能物联网解决方案提供商。' },
   { id: 'b3', name: '小米', logo: 'https://picsum.photos/seed/mi/100/100', description: '以 IoT 平台为核心的消费电子公司。' },
+];
+
+export const MOCK_SUPPLIERS: Supplier[] = [
+  {
+    id: 'sup1',
+    name: '深圳智能配件批发中心',
+    contactPerson: '王经理',
+    phone: '13566668888',
+    email: 'wang@smartwholesale.com',
+    address: '深圳市龙华区智能产业园',
+    categories: ['cat_sub_1_1', 'cat_sub_1_2'],
+    rating: 4.8,
+    createdAt: '2023-01-10'
+  },
+  {
+    id: 'sup2',
+    name: '华东安防器材总代理',
+    contactPerson: '李总',
+    phone: '13788889999',
+    email: 'li@securityhub.com',
+    address: '上海市徐汇区漕河泾',
+    categories: ['cat_sub_2_1', 'cat_sub_2_2'],
+    rating: 4.5,
+    createdAt: '2023-02-15'
+  }
+];
+
+export const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [
+  {
+    id: 'PO-20231101-001',
+    supplierId: 'sup1',
+    supplierName: '深圳智能配件批发中心',
+    items: [
+      { productId: 'p1', name: '智能调光开关', quantity: 100, cost: 120, total: 12000 }
+    ],
+    totalAmount: 12000,
+    status: PurchaseOrderStatus.RECEIVED,
+    createdAt: '2023-11-01',
+    receivedAt: '2023-11-05'
+  },
+  {
+    id: 'PO-20231120-002',
+    supplierId: 'sup2',
+    supplierName: '华东安防器材总代理',
+    items: [
+      { productId: 'p2', name: '4K 室外摄像头', quantity: 20, cost: 550, total: 11000 }
+    ],
+    totalAmount: 11000,
+    status: PurchaseOrderStatus.PENDING,
+    createdAt: '2023-11-20'
+  }
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
