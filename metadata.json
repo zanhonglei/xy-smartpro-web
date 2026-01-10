@@ -1,0 +1,7 @@
+{
+  "name": "SmartHome Designer Pro",
+  "description": "A comprehensive smart home solution design and management platform featuring AI-powered planning, floor plan visualization, product management, and construction tracking.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
