@@ -15,7 +15,7 @@ import ContractTemplateManager from './components/ContractTemplateManager';
 import CustomerManager from './components/CustomerManager';
 import QuoteManager from './components/QuoteManager';
 import OrderManager from './components/OrderManager';
-import Dashboard from './components/Dashboard'; // New Import
+import Dashboard from './components/Dashboard';
 import { 
   MOCK_PRODUCTS, 
   MOCK_SOLUTIONS, 
@@ -24,7 +24,9 @@ import {
   MOCK_CONSTRUCTION,
   MOCK_TEMPLATES,
   MOCK_BRANDS,
-  MOCK_CUSTOMERS
+  MOCK_CUSTOMERS,
+  MOCK_QUOTES,
+  MOCK_ORDERS
 } from './constants';
 import { 
   Solution, 
@@ -78,8 +80,8 @@ const App: React.FC = () => {
   const [templates, setTemplates] = useState<SolutionTemplate[]>(MOCK_TEMPLATES);
   const [constructionProjects, setConstructionProjects] = useState<ConstructionProject[]>(MOCK_CONSTRUCTION);
   const [customers, setCustomers] = useState<Customer[]>(MOCK_CUSTOMERS);
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>(MOCK_QUOTES);
+  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
   const [user] = useState<User>(MOCK_USER);
   const [editingSolution, setEditingSolution] = useState<Solution | null>(null);
 
