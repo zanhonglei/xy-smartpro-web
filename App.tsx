@@ -6,7 +6,7 @@ import {
   SupplierRMA, FinanceAccount, FinanceTransaction, Employee, Department, Role, 
   SystemNotification, InventoryRecord, StockTakeSession, DeliveryNote, User, 
   ElectronicSeal, ContractTemplate, Contract, ProjectStatus, OrderStatus, QuoteStatus,
-  DevicePoint, Room
+  DevicePoint, Room, VectorFloorPlanData, SmartBrand, DesignMode
 } from './types';
 import { 
   MOCK_SOLUTIONS, MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_BRANDS, MOCK_TEMPLATES, 
@@ -133,10 +133,10 @@ const App: React.FC = () => {
 
   const t = (key: keyof typeof translations['en']) => (translations[lang] as any)[key] || key;
 
-  const handleSaveSolution = (devices: DevicePoint[], rooms: Room[], originalId?: string) => {
+  const handleSaveSolution = (devices: DevicePoint[], rooms: Room[], originalId?: string, vectorData?: VectorFloorPlanData) => {
     if (!user) return;
     if (originalId) {
-      setSolutions(solutions.map(s => s.id === originalId ? { ...s, devices, rooms, updatedAt: new Date().toISOString() } : s));
+      setSolutions(solutions.map(s => s.id === originalId ? { ...s, devices, rooms, vectorData, updatedAt: new Date().toISOString() } : s));
     } else {
       const newSolution: Solution = {
         id: 's' + Math.random().toString(36).substr(2, 9),
@@ -147,6 +147,7 @@ const App: React.FC = () => {
         floorPlanUrl: 'https://picsum.photos/seed/new/800/600',
         rooms,
         devices,
+        vectorData,
         totalPrice: devices.reduce((acc, d) => acc + (products.find(p => p.id === d.productId)?.price || 0), 0),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

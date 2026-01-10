@@ -1,4 +1,12 @@
 
+export type SmartBrand = 'MiHome' | 'Aqara' | 'Tuya' | 'Control4' | 'Savand';
+
+export enum DesignMode {
+  AI = 'AI',
+  TEMPLATE = 'Template',
+  CUSTOM = 'Custom'
+}
+
 export enum ProjectStatus {
   DRAFT = 'Draft',
   PENDING = 'Pending',
@@ -37,7 +45,6 @@ export enum OrderStatus {
   COMPLETED = 'Completed'
 }
 
-// Fixed missing PurchaseOrderStatus enum
 export enum PurchaseOrderStatus {
   DRAFT = 'Draft',
   PENDING = 'Pending',
@@ -46,13 +53,35 @@ export enum PurchaseOrderStatus {
   CANCELLED = 'Cancelled'
 }
 
-// 施工全周期状态
+// Architectural Structure Recognition Types
+export interface RawStructureElement {
+  class: 'wall' | 'window' | 'door';
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface RecognizedRoom {
+  coordinates: number[][];
+  room_type: string;
+}
+
+export interface VectorFloorPlanData {
+  width: number;
+  height: number;
+  unit: number;
+  raw_data: RawStructureElement[];
+  rooms: RecognizedRoom[];
+}
+
+// ... Rest of the file remains same
 export enum ConstructionStatus {
-  UNASSIGNED = 'Unassigned', // 待派工
-  ONGOING = 'Ongoing',       // 施工中
-  INSPECTING = 'Inspecting', // 巡检中
-  ACCEPTANCE = 'Acceptance', // 验收中
-  COMPLETED = 'Completed'    // 已交付
+  UNASSIGNED = 'Unassigned',
+  ONGOING = 'Ongoing',
+  INSPECTING = 'Inspecting',
+  ACCEPTANCE = 'Acceptance',
+  COMPLETED = 'Completed'
 }
 
 export enum ConstructionPhaseStatus {
@@ -106,11 +135,10 @@ export interface ConstructionProject {
   endDate?: string;
   phases: ConstructionPhase[];
   inspections: InspectionRecord[];
-  customerSignature?: string; // Base64 signature image
+  customerSignature?: string;
   acceptanceDate?: string;
 }
 
-// ... 其余接口保持不变
 export interface Department {
   id: string;
   name: string;
@@ -495,6 +523,9 @@ export interface Solution {
   area?: number;
   type?: 'Full House' | 'Room Only';
   statusHistory: StatusEntry[];
+  vectorData?: VectorFloorPlanData;
+  smartBrand?: SmartBrand;
+  designMode?: DesignMode;
 }
 
 export interface User {

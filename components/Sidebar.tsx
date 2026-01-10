@@ -62,7 +62,8 @@ interface MenuItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) => {
   const { t } = useLanguage();
-  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['solution-mgmt', 'product-mgmt', 'e-contract', 'customer-mgmt', 'sales-mgmt', 'procurement-mgmt', 'after-sales-mgmt', 'finance-mgmt', 'system-mgmt', 'inventory-mgmt']));
+  // Changed initial state to empty Set so menus are collapsed by default
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', icon: <LayoutDashboard size={18} />, label: t('dashboard') },

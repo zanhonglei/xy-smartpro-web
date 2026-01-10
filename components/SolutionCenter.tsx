@@ -28,7 +28,8 @@ import {
   List,
   ChevronLeft,
   Calculator,
-  Loader2
+  Loader2,
+  Cpu
 } from 'lucide-react';
 
 interface SolutionCenterProps {
@@ -233,10 +234,16 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
               >
                 <div className="aspect-video mb-6 rounded-3xl overflow-hidden bg-slate-50 border relative">
                   <img src={solution.floorPlanUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="" />
-                  <div className="absolute top-4 right-4">
+                  <div className="absolute top-4 right-4 flex flex-col items-end space-y-2">
                     <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg ${getStatusColor(solution.status)}`}>
                       {t(solution.status.toLowerCase().replace(' ', '') as any)}
                     </span>
+                    {solution.vectorData && (
+                       <span className="px-2 py-1 bg-indigo-600 text-white rounded-lg text-[8px] font-black uppercase flex items-center space-x-1 shadow-lg">
+                          <Cpu size={10} />
+                          <span>Structure Recognized</span>
+                       </span>
+                    )}
                   </div>
                 </div>
 
@@ -291,7 +298,12 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
                     onClick={() => { setSelectedSolution(solution); setIsDetailModalOpen(true); }}
                     className="hover:bg-slate-50 transition-colors cursor-pointer group"
                   >
-                    <td className="px-6 py-4 font-bold text-slate-800">{solution.name}</td>
+                    <td className="px-6 py-4 font-bold text-slate-800">
+                       <div className="flex items-center space-x-2">
+                          <span>{solution.name}</span>
+                          {solution.vectorData && <Cpu size={12} className="text-indigo-500" />}
+                       </div>
+                    </td>
                     <td className="px-6 py-4 text-slate-600">{solution.customerName}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getStatusColor(solution.status)}`}>
@@ -324,6 +336,13 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
                 </div>
               </div>
               <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => { onEditSolution(selectedSolution); setIsDetailModalOpen(false); }}
+                  className="flex items-center space-x-2 px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-all shadow-md"
+                >
+                  <Edit size={18} />
+                  <span>{t('edit')}</span>
+                </button>
                 {selectedSolution.status === ProjectStatus.CONFIRMED && (
                    <button 
                     onClick={() => { onGenerateQuote(selectedSolution); setIsDetailModalOpen(false); }}
@@ -341,8 +360,27 @@ const SolutionCenter: React.FC<SolutionCenterProps> = ({ solutions, currentUser,
 
             <div className="flex-1 flex overflow-hidden">
               <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-10">
-                <div className="aspect-video rounded-[2rem] overflow-hidden border shadow-inner relative bg-slate-900">
-                  <img src={selectedSolution.floorPlanUrl} className="w-full h-full object-contain opacity-50" alt="" />
+                <div className="aspect-video rounded-[2rem] overflow-hidden border shadow-inner relative bg-slate-900 flex items-center justify-center p-8">
+                  {selectedSolution.vectorData ? (
+                     <div className="scale-125 transform pointer-events-none opacity-40">
+                        {/* Mock mini preview of the vector data */}
+                        <svg width="300" height="200" viewBox="0 0 500 375">
+                           {selectedSolution.vectorData.raw_data.filter(x=>x.class==='wall').map((w,i)=>(
+                              <rect key={i} x={w.x1} y={w.y1} width={Math.abs(w.x2-w.x1)||2} height={Math.abs(w.y2-w.y1)||2} fill="white" />
+                           ))}
+                           {selectedSolution.devices.map((d,i)=>(
+                              <circle key={i} cx={d.x} cy={d.y} r="5" fill="#3b82f6" />
+                           ))}
+                        </svg>
+                     </div>
+                  ) : (
+                    <img src={selectedSolution.floorPlanUrl} className="w-full h-full object-contain opacity-50" alt="" />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                     <p className="bg-slate-900/80 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10 text-white text-xs font-black uppercase tracking-widest">
+                        Preview Only · Click Edit to Design
+                     </p>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   {[

@@ -10,7 +10,13 @@ import {
 } from './types';
 import * as LucideIcons from 'lucide-react';
 
-// ... 保持图标和基础常量不变
+export const SMART_BRANDS = [
+  { id: 'MiHome', name: '米家 (MiHome)', logo: 'https://cdn.iconscout.com/icon/free/png-256/free-xiaomi-3215354-2673010.png' },
+  { id: 'Aqara', name: '绿米 (Aqara)', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Aqara_Logo.png/1200px-Aqara_Logo.png' },
+  { id: 'Tuya', name: '涂鸦 (Tuya)', logo: 'https://tuya-static.s3.amazonaws.com/static/brand/tuya_logo.png' },
+  { id: 'Control4', name: 'Control4', logo: 'https://www.control4.com/static/img/logo-c4.png' },
+];
+
 export const getIcon = (name: string) => {
   const Icon = (LucideIcons as any)[name] || LucideIcons.HelpCircle;
   return <Icon size={18} />;
@@ -26,6 +32,7 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   '环境气候': <LucideIcons.Wind size={18} />,
 };
 
+// ... Rest of the file remains same
 export const MOCK_DEPARTMENTS: Department[] = [
   { id: 'dept1', name: '总经办', description: '公司核心决策层' },
   { id: 'dept2', name: '设计部', parentId: 'dept1', description: '负责智能方案全案设计' },
@@ -125,7 +132,6 @@ export const MOCK_CONSTRUCTION: ConstructionProject[] = [
   }
 ];
 
-// ... 其他 MOCK 常量保持不变 (MOCK_PRODUCTS, MOCK_CATEGORIES 等)
 export const MOCK_NOTIFICATIONS: SystemNotification[] = [
   {
     id: 'n1',
