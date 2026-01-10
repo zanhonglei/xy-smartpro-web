@@ -3,19 +3,23 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Product } from "./types";
 import { Language } from "./i18n";
 
-// Use process.env.API_KEY directly as per guidelines
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export interface SpatialRequest {
   image: string; // base64
   needs: string[];
-  budget: number; // Changed from 'low' | 'medium' | 'high' to number
+  budget: number; 
   lang: Language;
 }
 
 // 1. Analyze floor plan image and suggest X,Y coordinates
 // Using gemini-3-pro-preview for advanced reasoning tasks as per guidelines
 export const generateSpatialSolution = async (req: SpatialRequest, availableProducts: Product[]) => {
+  if (!req.image) {
+    throw new Error("No image data provided to Spatial AI");
+  }
+
+  // Create new GoogleGenAI instance right before call as per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   const systemInstruction = `You are a Smart Home Architect. 
   Analyze the provided floor plan image carefully. 
   Identify rooms (Living, Bedroom, etc.) and suggest precise device placements.
@@ -36,11 +40,14 @@ export const generateSpatialSolution = async (req: SpatialRequest, availableProd
   `;
 
   try {
+    const imageData = req.image.includes(',') ? req.image.split(',')[1] : req.image;
+    const mimeType = req.image.match(/data:([^;]+);base64/)?.[1] || 'image/png';
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: {
         parts: [
-          { inlineData: { data: req.image.split(',')[1], mimeType: 'image/png' } },
+          { inlineData: { data: imageData, mimeType } },
           { text: prompt }
         ]
       },
@@ -79,8 +86,10 @@ export const generateSpatialSolution = async (req: SpatialRequest, availableProd
 };
 
 // 2. Generate 3D Effect Preview images
-// Using gemini-2.5-flash-image for standard image generation tasks
 export const generateRoomVisual = async (roomName: string, devices: string[], lang: Language) => {
+  // Create new GoogleGenAI instance right before call as per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   const prompt = `A cinematic, ultra-realistic 3D architectural rendering of a modern ${roomName} featuring integrated smart home technology. 
   The room has ${devices.join(', ')} visible. 
   Lighting is warm and high-end. 8k resolution, photorealistic, interior design magazine style.`;

@@ -1,47 +1,64 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { VectorFloorPlanData, DevicePoint, Product } from '../types';
 import { CATEGORY_ICONS } from '../constants';
-import { Trash2, Info, Power, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+// Add missing 'X' icon import to fix line 193 error
+import { Trash2, Info, Power, ZoomIn, ZoomOut, Maximize, MousePointer2, X } from 'lucide-react';
 
 interface VectorFloorPlanProps {
   data: VectorFloorPlanData;
   devices: DevicePoint[];
   products: Product[];
-  onAddDevice: (productId: string, x: number, y: number, roomName: string) => void;
+  onAddDeviceAt: (x: number, y: number, roomName: string) => void;
   onUpdateDevice: (id: string, updates: Partial<DevicePoint>) => void;
+  onMoveDevice: (id: string, x: number, y: number) => void;
   onRemoveDevice: (id: string) => void;
 }
 
 const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({ 
-  data, devices, products, onAddDevice, onUpdateDevice, onRemoveDevice 
+  data, devices, products, onAddDeviceAt, onUpdateDevice, onMoveDevice, onRemoveDevice 
 }) => {
   const [zoom, setZoom] = useState(1);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
   const getProductById = (id: string) => products.find(p => p.id === id);
+
+  const getSvgCoords = (clientX: number, clientY: number) => {
+    if (!svgRef.current) return { x: 0, y: 0 };
+    const pt = svgRef.current.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const transformed = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
+    return { x: transformed.x, y: transformed.y };
+  };
 
   const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
     
     // Check if clicking a device point instead of the map
-    if ((e.target as any).closest('.device-point')) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('.device-point')) return;
 
-    const pt = svgRef.current.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const svgP = pt.matrixTransform(svgRef.current.getScreenCTM()?.inverse());
+    const { x, y } = getSvgCoords(e.clientX, e.clientY);
 
     // Basic logic: determine room by coordinates
-    const room = data.rooms.find(r => {
-      // Ray-casting for point in polygon (simplified for 2D rects usually, but using logic for coordinates)
-      return isPointInPoly([svgP.x, svgP.y], r.coordinates);
-    });
+    const room = data.rooms.find(r => isPointInPoly([x, y], r.coordinates));
+    const roomName = room ? room.room_type : 'Unknown';
 
-    // For demo, if user clicks, we don't automatically add because we need to know WHICH product.
-    // In a real app, they would have a "Brush" or "Active Product" selected.
+    onAddDeviceAt(x, y, roomName);
     setSelectedPointId(null);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!draggingId) return;
+    const { x, y } = getSvgCoords(e.clientX, e.clientY);
+    onMoveDevice(draggingId, x, y);
+  };
+
+  const handleMouseUp = () => {
+    setDraggingId(null);
   };
 
   const isPointInPoly = (point: number[], vs: number[][]) => {
@@ -57,7 +74,12 @@ const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full bg-slate-900 overflow-hidden flex items-center justify-center p-8">
+    <div 
+      className="relative w-full h-full bg-slate-900 overflow-hidden flex items-center justify-center p-8 select-none"
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
       {/* Controls Overlay */}
       <div className="absolute bottom-8 left-8 z-20 flex bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 space-x-2">
          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="p-3 text-white hover:bg-white/10 rounded-xl transition-all"><ZoomOut size={20}/></button>
@@ -122,15 +144,20 @@ const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({
           {devices.map(d => {
             const p = getProductById(d.productId);
             const isSelected = selectedPointId === d.id;
+            const isDragging = draggingId === d.id;
             return (
               <g 
                 key={d.id} 
-                className="device-point group cursor-pointer"
-                onClick={(e) => { e.stopPropagation(); setSelectedPointId(d.id); }}
+                className={`device-point cursor-move ${isDragging ? 'pointer-events-none' : ''}`}
+                onMouseDown={(e) => { 
+                   e.stopPropagation(); 
+                   setSelectedPointId(d.id); 
+                   setDraggingId(d.id);
+                }}
               >
                 <circle 
                   cx={d.x} cy={d.y} r={isSelected ? 14 : 10}
-                  className={`transition-all duration-300 ${d.status === 'on' ? 'fill-blue-500 shadow-blue-500' : 'fill-slate-500'}`}
+                  className={`transition-all ${d.status === 'on' ? 'fill-blue-500 shadow-blue-500' : 'fill-slate-500'}`}
                   stroke="white"
                   strokeWidth="2"
                 />
@@ -139,11 +166,13 @@ const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({
                 </g>
                 
                 {/* Tooltip on Hover */}
-                <g className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  <rect x={d.x + 15} y={d.y - 25} width="120" height="40" rx="8" className="fill-slate-900/90" />
-                  <text x={d.x + 25} y={d.y - 12} className="fill-white text-[10px] font-bold">{p?.name}</text>
-                  <text x={d.x + 25} y={d.y + 2} className="fill-slate-400 text-[8px] uppercase">{d.roomName}</text>
-                </g>
+                {!isDragging && (
+                   <g className="opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
+                     <rect x={d.x + 15} y={d.y - 25} width="120" height="40" rx="8" className="fill-slate-900/90" />
+                     <text x={d.x + 25} y={d.y - 12} className="fill-white text-[10px] font-bold">{p?.name}</text>
+                     <text x={d.x + 25} y={d.y + 2} className="fill-slate-400 text-[8px] uppercase">{d.roomName}</text>
+                   </g>
+                )}
               </g>
             );
           })}
@@ -151,7 +180,7 @@ const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({
       </div>
 
       {/* Selected Point Editor Overlay */}
-      {selectedPointId && (
+      {selectedPointId && !draggingId && (
         <div className="absolute top-8 right-8 w-72 bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[2.5rem] p-6 text-white shadow-2xl animate-in fade-in slide-in-from-right duration-300">
            {(() => {
               const d = devices.find(x => x.id === selectedPointId);
@@ -161,37 +190,39 @@ const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({
                 <div className="space-y-6">
                    <div className="flex items-center justify-between">
                       <h4 className="font-black text-sm uppercase tracking-widest text-blue-400">点位编辑</h4>
-                      <button onClick={() => setSelectedPointId(null)}><X size={18} /></button>
+                      <button onClick={() => setSelectedPointId(null)} className="text-white hover:text-slate-300 transition-colors">
+                         <X size={18} />
+                      </button>
                    </div>
                    <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-blue-400 shadow-inner">
                         {(CATEGORY_ICONS as any)[p.category]}
                       </div>
-                      <div>
-                        <p className="font-bold text-sm leading-tight">{p.name}</p>
+                      <div className="overflow-hidden">
+                        <p className="font-bold text-sm leading-tight truncate">{p.name}</p>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{p.brand}</p>
                       </div>
                    </div>
                    <div className="grid grid-cols-2 gap-3">
                       <button 
                         onClick={() => onUpdateDevice(d.id, { status: d.status === 'on' ? 'off' : 'on' })}
-                        className={`flex items-center justify-center space-x-2 py-3 rounded-xl font-bold text-xs transition-all ${d.status === 'on' ? 'bg-green-500 text-white' : 'bg-white/5 text-slate-400'}`}
+                        className={`flex items-center justify-center space-x-2 py-3 rounded-xl font-bold text-xs transition-all ${d.status === 'on' ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'bg-white/5 text-slate-400 border border-white/5'}`}
                       >
                         <Power size={14} />
                         <span>{d.status === 'on' ? '开启' : '关闭'}</span>
                       </button>
                       <button 
                         onClick={() => { onRemoveDevice(d.id); setSelectedPointId(null); }}
-                        className="flex items-center justify-center space-x-2 py-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-bold text-xs hover:bg-red-500 hover:text-white transition-all"
+                        className="flex items-center justify-center space-x-2 py-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-bold text-xs hover:bg-red-500 hover:text-white transition-all shadow-lg"
                       >
                         <Trash2 size={14} />
                         <span>移除点位</span>
                       </button>
                    </div>
-                   <div className="pt-4 border-t border-white/5 flex items-center justify-between text-[10px] font-black uppercase text-slate-400">
+                   <div className="pt-4 border-t border-white/5 flex items-center justify-between text-[10px] font-black uppercase text-slate-400 tracking-tighter">
                       <span>X: {d.x.toFixed(0)}</span>
                       <span>Y: {d.y.toFixed(0)}</span>
-                      <span className="text-blue-500">{d.roomName}</span>
+                      <span className="text-blue-500 max-w-[100px] truncate">{d.roomName}</span>
                    </div>
                 </div>
               );
@@ -203,6 +234,3 @@ const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({
 };
 
 export default VectorFloorPlan;
-
-// Helper component for X
-const X = ({size}: {size:number}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;

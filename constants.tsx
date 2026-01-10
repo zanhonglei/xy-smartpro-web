@@ -30,9 +30,69 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   '摄像头': <LucideIcons.Camera size={18} />,
   '智能门锁': <LucideIcons.Lock size={18} />,
   '环境气候': <LucideIcons.Wind size={18} />,
+  '窗帘电机': <LucideIcons.Columns size={18} />,
+  '传感器': <LucideIcons.Zap size={18} />,
+  '中控网关': <LucideIcons.Cpu size={18} />,
 };
 
-// ... Rest of the file remains same
+export const MOCK_PRODUCTS: Product[] = [
+  // --- Aqara (绿米) ---
+  {
+    id: 'p1', name: '智能调光开关 D1', brand: 'Aqara', model: 'D1 Single', categoryId: 'cat_sub_1_1', category: '智能开关', price: 199, stock: 50, description: '支持 Zigbee 3.0 的高品质调光开关。',
+    imageUrl: 'https://img.alicdn.com/imgextra/i4/2206623694081/O1CN01f4H8vB1pIuV2u8P9Y_!!2206623694081.jpg',
+    skus: [{ id: 'sku1_1', name: '单路 Zigbee / 白色', price: 199, cost: 120, stock: 30, skuCode: 'AQ-D1-S1-W' }], isCompanyActive: true
+  },
+  {
+    id: 'p10', name: '智能窗帘电机 C2', brand: 'Aqara', model: 'ZNCLDJ11LM', categoryId: 'cat_curtain', category: '窗帘电机', price: 599, stock: 30, description: '静音运行，支持自定义开合比例。',
+    imageUrl: 'https://img.alicdn.com/imgextra/i4/2206623694081/O1CN01Z7Wv3t1pIuV4wXpE8_!!2206623694081.jpg',
+    skus: [{ id: 'sku10_1', name: '标准版', price: 599, cost: 350, stock: 30 }], isCompanyActive: true
+  },
+  {
+    id: 'p11', name: '人体传感器 P1', brand: 'Aqara', model: 'RTCGQ11LM', categoryId: 'cat_sensor', category: '传感器', price: 129, stock: 100, description: '超长续航，多级灵敏度调节。',
+    imageUrl: 'https://img.alicdn.com/imgextra/i4/2206623694081/O1CN019A1pIuV2u9r3rJ_!!2206623694081.jpg',
+    skus: [{ id: 'sku11_1', name: '白色', price: 129, cost: 60, stock: 100 }], isCompanyActive: true
+  },
+  // --- MiHome (米家) ---
+  {
+    id: 'p3', name: '多模网关 V3', brand: 'MiHome', model: 'ZNDMWG03LM', categoryId: 'cat_hub', category: '中控网关', price: 399, stock: 100, description: '全屋智能的核心枢纽。',
+    imageUrl: 'https://img.alicdn.com/imgextra/i4/2206623694081/O1CN01T3pIuV2u8r4qI_!!2206623694081.jpg',
+    skus: [{ id: 'sku3_1', name: '标准版', price: 399, cost: 200, stock: 100 }], isCompanyActive: true
+  },
+  {
+    id: 'p12', name: '智能吸顶灯 450mm', brand: 'MiHome', model: 'MJXD01YL', categoryId: 'cat_lighting', category: '智能灯具', price: 349, stock: 45, description: '冷暖色温可调，高显色指数。',
+    imageUrl: 'https://img.alicdn.com/imgextra/i4/2206623694081/O1CN01P3pIuV2u8z9uE_!!2206623694081.jpg',
+    skus: [{ id: 'sku12_1', name: '450mm 圆形', price: 349, cost: 210, stock: 45 }], isCompanyActive: true
+  },
+  {
+    id: 'p13', name: '智能筒灯 Mesh版', brand: 'MiHome', model: 'MJTD01YL', categoryId: 'cat_lighting', category: '智能灯具', price: 49, stock: 500, description: '蓝牙 Mesh 组网，光感细腻。',
+    imageUrl: 'https://img.alicdn.com/imgextra/i2/2206623694081/O1CN01p3pIuV2u9X9wN_!!2206623694081.jpg',
+    skus: [{ id: 'sku13_1', name: '4W', price: 49, cost: 25, stock: 500 }], isCompanyActive: true
+  },
+  // --- Tuya (涂鸦) ---
+  {
+    id: 'p14', name: '万能红外转发器', brand: 'Tuya', model: 'TY-IR-01', categoryId: 'cat_hub', category: '中控网关', price: 89, stock: 120, description: '控制普通家电实现智能化。',
+    imageUrl: 'https://img.alicdn.com/imgextra/i4/2206623694081/O1CN01T3pIuV2u8q9rJ_!!2206623694081.jpg',
+    skus: [{ id: 'sku14_1', name: 'USB版', price: 89, cost: 40, stock: 120 }], isCompanyActive: true
+  },
+  {
+    id: 'p15', name: '门窗传感器', brand: 'Tuya', model: 'TY-DS-01', categoryId: 'cat_sensor', category: '传感器', price: 59, stock: 200, description: '即开即报，低功耗。',
+    imageUrl: 'https://img.alicdn.com/imgextra/i4/2206623694081/O1CN01T3pIuV2u8p9uY_!!2206623694081.jpg',
+    skus: [{ id: 'sku15_1', name: 'Zigbee版', price: 59, cost: 25, stock: 200 }], isCompanyActive: true
+  },
+];
+
+export const MOCK_CATEGORIES: CategoryItem[] = [
+  { id: 'cat_root_1', name: '智能照明', iconName: 'Lightbulb', description: '全屋灯光控制系统' },
+  { id: 'cat_sub_1_1', name: '智能开关', parentId: 'cat_root_1', iconName: 'ToggleRight', description: '墙面开关、调光开关' },
+  { id: 'cat_lighting', name: '智能灯具', parentId: 'cat_root_1', iconName: 'Lamp', description: '吸顶灯、筒灯、灯带' },
+  { id: 'cat_sensor', name: '传感器', iconName: 'Zap', description: '环境、人体、水浸感应' },
+  { id: 'cat_curtain', name: '窗帘电机', iconName: 'Columns', description: '开合帘、卷帘、百叶帘电机' },
+  { id: 'cat_hub', name: '中控网关', iconName: 'Cpu', description: '系统核心及网关' },
+  { id: 'cat_root_2', name: '安防监控', iconName: 'ShieldCheck', description: '家庭安全守护系统' },
+  { id: 'cat_sub_2_1', name: '摄像头', parentId: 'cat_root_2', iconName: 'Camera', description: '户内外监控' },
+  { id: 'cat_sub_2_2', name: '智能门锁', parentId: 'cat_root_2', iconName: 'Lock', description: '入户门锁、室内锁' },
+];
+
 export const MOCK_DEPARTMENTS: Department[] = [
   { id: 'dept1', name: '总经办', description: '公司核心决策层' },
   { id: 'dept2', name: '设计部', parentId: 'dept1', description: '负责智能方案全案设计' },
@@ -145,16 +205,6 @@ export const MOCK_NOTIFICATIONS: SystemNotification[] = [
   }
 ];
 
-export const MOCK_CATEGORIES: CategoryItem[] = [
-  { id: 'cat_root_1', name: '智能照明', iconName: 'Lightbulb', description: '全屋灯光控制系统' },
-  { id: 'cat_sub_1_1', name: '智能开关', parentId: 'cat_root_1', iconName: 'ToggleRight', description: '墙面开关、调光开关' },
-  { id: 'cat_sub_1_2', name: '智能灯具', parentId: 'cat_root_1', iconName: 'Lamp', description: '吸顶灯、灯带、射灯' },
-  { id: 'cat_root_2', name: '安防监控', iconName: 'ShieldCheck', description: '家庭安全守护系统' },
-  { id: 'cat_sub_2_1', name: '摄像头', parentId: 'cat_root_2', iconName: 'Camera', description: '户内外监控' },
-  { id: 'cat_sub_2_2', name: '智能门锁', parentId: 'cat_root_2', iconName: 'Lock', description: '入户门锁、室内锁' },
-  { id: 'cat_root_3', name: '环境气候', iconName: 'Wind', description: '空调、新风、地暖' },
-];
-
 export const MOCK_BRANDS: Brand[] = [
   { id: 'b1', name: 'Aqara', logo: 'https://picsum.photos/seed/aqara/100/100', description: '专注全屋智能领域的领军品牌。' },
   { id: 'b2', name: '海康威视', logo: 'https://picsum.photos/seed/hik/100/100', description: '全球领先的智能物联网解决方案提供商。' },
@@ -264,73 +314,6 @@ export const MOCK_RMAS: SupplierRMA[] = [
     faultDescription: '控制电路烧毁',
     status: SupplierRMAStatus.PENDING,
     createdAt: '2023-11-22'
-  }
-];
-
-export const MOCK_PRODUCTS: Product[] = [
-  {
-    id: 'p1',
-    name: '智能调光开关',
-    brand: 'Aqara',
-    model: 'D1 Single',
-    categoryId: 'cat_sub_1_1',
-    category: '智能开关',
-    price: 199,
-    stock: 50,
-    description: '支持 Zigbee 3.0 的高品质调光开关。',
-    imageUrl: 'https://picsum.photos/seed/light/200/200',
-    skus: [
-      { id: 'sku1_1', name: '单路 Zigbee / 白色', price: 199, cost: 120, stock: 30, skuCode: 'AQ-D1-S1-W' },
-      { id: 'sku1_2', name: '单路 Zigbee / 灰色', price: 219, cost: 130, stock: 20, skuCode: 'AQ-D1-S1-G' }
-    ],
-    isCompanyActive: true
-  },
-  {
-    id: 'p2',
-    name: '4K 室外摄像头',
-    brand: '海康威视',
-    model: 'DS-2CD',
-    categoryId: 'cat_sub_2_1',
-    category: '摄像头',
-    price: 899,
-    stock: 20,
-    description: '超高清监控，支持 AI 人形检测。',
-    imageUrl: 'https://picsum.photos/seed/camera/200/200',
-    skus: [
-      { id: 'sku2_1', name: '4K 有线 POE 版', price: 899, cost: 550, stock: 15, skuCode: 'HK-4K-POE' },
-      { id: 'sku2_2', name: '4K Wi-Fi 电池版', price: 1099, cost: 700, stock: 5, skuCode: 'HK-4K-WIFI' }
-    ],
-    isCompanyActive: true
-  },
-  {
-    id: 'p3',
-    name: '智能网关 V3',
-    brand: '小米',
-    model: 'Multi-mode v3',
-    categoryId: 'cat_root_1',
-    category: '智能照明',
-    price: 399,
-    stock: 100,
-    description: '全屋智能的核心枢纽。',
-    imageUrl: 'https://picsum.photos/seed/hub/200/200',
-    skus: [
-      { id: 'sku3_1', name: '标准版', price: 399, cost: 200, stock: 100, skuCode: 'MI-GW-V3' }
-    ],
-    isCompanyActive: true
-  },
-  {
-    id: 'p4',
-    name: '全自动智能门锁',
-    brand: 'Aqara',
-    model: 'A100',
-    categoryId: 'cat_sub_2_2',
-    category: '智能门锁',
-    price: 1599,
-    stock: 15,
-    description: '支持指纹、密码、HomeKit。',
-    imageUrl: 'https://picsum.photos/seed/lock/200/200',
-    skus: [{ id: 'sku4_1', name: '标准版 / 黑色', price: 1599, cost: 900, stock: 15, skuCode: 'AQ-A100-B' }],
-    isCompanyActive: false
   }
 ];
 
