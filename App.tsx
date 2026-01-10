@@ -1,5 +1,5 @@
 
-import React, { useState, createContext, useContext } from 'react';
+import React, { useState, createContext, useContext, useEffect } from 'react';
 import { 
   Solution, Product, CategoryItem, Brand, SolutionTemplate, ConstructionProject, 
   Customer, Quote, Order, Supplier, PurchaseOrder, StockingOrder, AfterSalesTicket, 
@@ -16,7 +16,7 @@ import {
   MOCK_NOTIFICATIONS, MOCK_USER 
 } from './constants';
 import { Language, translations } from './i18n';
-import { ChevronRight, Languages } from 'lucide-react';
+import { ChevronRight, Languages, Loader2 } from 'lucide-react';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -46,15 +46,15 @@ import SealManager from './components/SealManager';
 import CompanyProductLibrary from './components/CompanyProductLibrary';
 import ProductManager from './components/ProductManager';
 import BrandLibrary from './components/BrandLibrary';
+import LoginPage from './components/LoginPage';
 
-// Context definition to fix components import errors
+// Context definition
 export const LanguageContext = createContext<{
   lang: Language;
   setLang: (lang: Language) => void;
   t: (key: keyof typeof translations['en']) => string;
 } | undefined>(undefined);
 
-// Export hook to fix components import errors
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) throw new Error('useLanguage must be used within a LanguageProvider');
@@ -62,6 +62,12 @@ export const useLanguage = () => {
 };
 
 const App: React.FC = () => {
+  // Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // App State
   const [lang, setLang] = useState<Language>('zh');
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [solutions, setSolutions] = useState<Solution[]>(MOCK_SOLUTIONS);
@@ -91,9 +97,7 @@ const App: React.FC = () => {
   const [stockTakeSessions, setStockTakeSessions] = useState<StockTakeSession[]>([]);
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
 
-  const [user] = useState<User>(MOCK_USER);
   const [editingSolution, setEditingSolution] = useState<Solution | null>(null);
-
   const [seals, setSeals] = useState<ElectronicSeal[]>([]);
   const [contractTemplates, setContractTemplates] = useState<ContractTemplate[]>([
     {
@@ -105,10 +109,32 @@ const App: React.FC = () => {
   ]);
   const [contracts, setContracts] = useState<Contract[]>([]);
 
+  // Simulation of persistent login
+  useEffect(() => {
+    const savedUser = localStorage.getItem('smartpro_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+      setIsAuthenticated(true);
+    }
+    setIsInitializing(false);
+  }, []);
+
+  const handleLogin = (u: User) => {
+    setUser(u);
+    setIsAuthenticated(true);
+    localStorage.setItem('smartpro_user', JSON.stringify(u));
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    localStorage.removeItem('smartpro_user');
+  };
+
   const t = (key: keyof typeof translations['en']) => (translations[lang] as any)[key] || key;
 
-  // Added logic handlers to fix missing reference errors
   const handleSaveSolution = (devices: DevicePoint[], rooms: Room[], originalId?: string) => {
+    if (!user) return;
     if (originalId) {
       setSolutions(solutions.map(s => s.id === originalId ? { ...s, devices, rooms, updatedAt: new Date().toISOString() } : s));
     } else {
@@ -220,10 +246,27 @@ const App: React.FC = () => {
     }
   };
 
+  if (isInitializing) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-white">
+        <Loader2 className="animate-spin mb-4 text-blue-500" size={48} />
+        <p className="font-black tracking-widest uppercase text-xs opacity-50">SmartPro Initializing</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <LanguageContext.Provider value={{ lang, setLang, t }}>
+        <LoginPage onLogin={handleLogin} />
+      </LanguageContext.Provider>
+    );
+  }
+
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
       <div className="flex h-screen bg-slate-50 overflow-hidden">
-        <Sidebar currentTab={currentTab} onTabChange={handleTabChange} onLogout={() => alert('Logged out')} />
+        <Sidebar currentTab={currentTab} onTabChange={handleTabChange} onLogout={handleLogout} />
         
         <main className="flex-1 ml-64 flex flex-col overflow-hidden">
           <header className="h-16 bg-white border-b flex items-center justify-between px-8 shrink-0">

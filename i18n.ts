@@ -270,7 +270,7 @@ export const translations = {
     brandLibrary: "品牌库",
     productManagement: "产品管理",
     categories: "类别管理",
-    construction: "施工进度",
+    construction: "施工全周期管理",
     eContract: "电子合同",
     contractMgmt: "合同列表",
     contractTemplates: "模板管理",
