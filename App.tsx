@@ -6,7 +6,7 @@ import {
   ConstructionProject, PurchaseOrder, StockingOrder, Supplier,
   AfterSalesTicket, SupplierRMA, FinanceAccount, FinanceTransaction,
   Employee, Department, Role, SystemNotification, ProjectStatus, QuoteStatus, OrderStatus,
-  InventoryRecord, StockTakeSession, DeliveryNote, InventoryMovementType, InventoryReason
+  InventoryRecord, StockTakeSession, DeliveryNote, InventoryMovementType, InventoryReason, DesignStyle
 } from './types';
 import { 
   MOCK_SOLUTIONS, MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_BRANDS, MOCK_TEMPLATES,
@@ -55,20 +55,17 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-// Fix: Added named export for useLanguage hook to resolve component import errors
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) throw new Error('useLanguage must be used within a LanguageProvider');
   return context;
 };
 
-// Fix: Implemented full App component with state and routing to resolve "Cannot find name" errors
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [lang, setLang] = useState<Language>('zh');
   const [currentTab, setCurrentTab] = useState('dashboard');
 
-  // Data State
   const [solutions, setSolutions] = useState<Solution[]>(MOCK_SOLUTIONS);
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [categories, setCategories] = useState<CategoryItem[]>(MOCK_CATEGORIES);
@@ -95,7 +92,6 @@ const App: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>(MOCK_DEPARTMENTS);
   const [roles, setRoles] = useState<Role[]>(MOCK_ROLES);
   const [notifications, setNotifications] = useState<SystemNotification[]>(MOCK_NOTIFICATIONS);
-  
   const [editingSolution, setEditingSolution] = useState<Solution | null>(null);
 
   const t = (key: keyof typeof translations['en']) => {
@@ -103,24 +99,16 @@ const App: React.FC = () => {
   };
 
   const handleGenerateQuote = (solution: Solution) => {
-    const quoteItems = solution.devices.map(d => {
-        const p = products.find(prod => prod.id === d.productId);
-        return {
-            productId: d.productId,
-            name: p?.name || 'Unknown',
-            price: p?.price || 0,
-            quantity: 1,
-            total: p?.price || 0
-        };
-    });
     const itemMap = new Map<string, any>();
-    quoteItems.forEach(item => {
-        if(itemMap.has(item.productId)) {
-            const existing = itemMap.get(item.productId);
+    solution.devices.forEach(d => {
+        const p = products.find(prod => prod.id === d.productId);
+        if(!p) return;
+        if(itemMap.has(d.productId)) {
+            const existing = itemMap.get(d.productId);
             existing.quantity += 1;
-            existing.total += item.price;
+            existing.total += p.price;
         } else {
-            itemMap.set(item.productId, item);
+            itemMap.set(d.productId, { productId: d.productId, name: p.name, price: p.price, quantity: 1, total: p.price });
         }
     });
 
@@ -136,54 +124,31 @@ const App: React.FC = () => {
         shippingFee: 50,
         tax: 0,
         discount: 0,
-        totalAmount: 0,
+        totalAmount: Array.from(itemMap.values()).reduce((s, i) => s + i.total, 0) + 750,
         status: QuoteStatus.DRAFT,
         createdAt: new Date().toISOString()
     };
-    newQuote.totalAmount = Array.from(itemMap.values()).reduce((s, i) => s + i.total, 0) + 750;
     setQuotes([...quotes, newQuote]);
     setCurrentTab('quotes');
   };
 
   const handleCreateOrder = (quote: Quote) => {
-    const newOrder: Order = {
-        id: 'ORD-' + new Date().getTime(),
-        quoteId: quote.id,
-        customerId: quote.customerId,
-        customerName: quote.customerName,
-        totalAmount: quote.totalAmount,
-        paidAmount: 0,
-        paymentStatus: 'Unpaid',
-        status: OrderStatus.WAITING_PAY,
-        vouchers: [],
-        createdAt: new Date().toISOString()
-    };
+    const newOrder: Order = { id: 'ORD-' + new Date().getTime(), quoteId: quote.id, customerId: quote.customerId, customerName: quote.customerName, totalAmount: quote.totalAmount, paidAmount: 0, paymentStatus: 'Unpaid', status: OrderStatus.WAITING_PAY, vouchers: [], createdAt: new Date().toISOString() };
     setOrders([...orders, newOrder]);
     setCurrentTab('orders');
   };
 
-  if (!user) {
-    return (
-      <LanguageContext.Provider value={{ lang, setLang, t }}>
-        <LoginPage onLogin={setUser} />
-      </LanguageContext.Provider>
-    );
-  }
+  if (!user) { return (<LanguageContext.Provider value={{ lang, setLang, t }}><LoginPage onLogin={setUser} /></LanguageContext.Provider>); }
 
   const renderContent = () => {
     switch (currentTab) {
-      case 'dashboard':
-        return <Dashboard solutions={solutions} orders={orders} customers={customers} quotes={quotes} contracts={contracts} onTabChange={setCurrentTab} />;
-      case 'customer-pool':
-        return <CustomerManager customers={customers} onUpdate={setCustomers} currentUser={user} type="pool" />;
-      case 'my-customers':
-        return <CustomerManager customers={customers} onUpdate={setCustomers} currentUser={user} type="mine" />;
+      case 'dashboard': return <Dashboard solutions={solutions} orders={orders} customers={customers} quotes={quotes} contracts={contracts} onTabChange={setCurrentTab} />;
       case 'designer':
         return (
           <FloorPlanDesigner 
             products={products} 
             initialSolution={editingSolution}
-            onSave={(devices, rooms, originalId, vectorData) => {
+            onSave={(devices, rooms, originalId, vectorData, style) => {
               const newSolution: Solution = {
                 id: originalId || 's' + Math.random().toString(36).substr(2, 9),
                 name: (originalId ? solutions.find(s => s.id === originalId)?.name : 'New Design') || 'Design',
@@ -197,78 +162,34 @@ const App: React.FC = () => {
                 createdAt: new Date().toISOString().split('T')[0],
                 updatedAt: new Date().toISOString().split('T')[0],
                 statusHistory: [{ status: ProjectStatus.DRAFT, timestamp: new Date().toLocaleString(), userName: user.name }],
-                vectorData
+                vectorData,
+                designStyle: style
               };
-              if (originalId) {
-                setSolutions(solutions.map(s => s.id === originalId ? newSolution : s));
-              } else {
-                setSolutions([newSolution, ...solutions]);
-              }
+              if (originalId) { setSolutions(solutions.map(s => s.id === originalId ? newSolution : s)); }
+              else { setSolutions([newSolution, ...solutions]); }
               setEditingSolution(null);
               setCurrentTab('solutions');
             }} 
           />
         );
-      case 'solutions':
-        return <SolutionCenter solutions={solutions} products={products} currentUser={user} onUpdate={setSolutions} onSaveAsTemplate={(newT) => setTemplates([...templates, newT])} onEditSolution={(s) => { setEditingSolution(s); setCurrentTab('designer'); }} onGenerateQuote={handleGenerateQuote} />;
-      case 'templates':
-        return <TemplateManager templates={templates} products={products} onUpdate={setTemplates} />;
-      case 'quotes':
-        return <QuoteManager quotes={quotes} solutions={solutions} products={products} currentUser={user} onUpdate={setQuotes} onCreateOrder={handleCreateOrder} />;
-      case 'orders':
-        return <OrderManager orders={orders} currentUser={user} onUpdate={setOrders} onConfirmPayment={(o) => setOrders(orders.map(x => x.id === o.id ? { ...x, paymentStatus: 'Paid', paidAmount: x.totalAmount, status: OrderStatus.PREPARING } : x))} />;
-      case 'purchase-orders':
-        return <PurchaseOrderManager purchaseOrders={purchaseOrders} suppliers={suppliers} products={products} onUpdate={setPurchaseOrders} />;
-      case 'stocking-orders':
-        return <StockingOrderManager stockingOrders={stockingOrders} products={products} onUpdate={setStockingOrders} />;
-      case 'suppliers':
-        return <SupplierManager suppliers={suppliers} categories={categories} onUpdate={setSuppliers} />;
-      case 'inventory-in':
-        return <InventoryManager activeSubTab="in" products={products} records={inventoryRecords} sessions={stockTakeSessions} deliveryNotes={deliveryNotes} orders={orders} quotes={quotes} onUpdateProducts={setProducts} onUpdateRecords={setInventoryRecords} onUpdateSessions={setStockTakeSessions} onUpdateDeliveryNotes={setDeliveryNotes} />;
-      case 'inventory-out':
-        return <InventoryManager activeSubTab="out" products={products} records={inventoryRecords} sessions={stockTakeSessions} deliveryNotes={deliveryNotes} orders={orders} quotes={quotes} onUpdateProducts={setProducts} onUpdateRecords={setInventoryRecords} onUpdateSessions={setStockTakeSessions} onUpdateDeliveryNotes={setDeliveryNotes} />;
-      case 'inventory-take':
-        return <InventoryManager activeSubTab="take" products={products} records={inventoryRecords} sessions={stockTakeSessions} deliveryNotes={deliveryNotes} orders={orders} quotes={quotes} onUpdateProducts={setProducts} onUpdateRecords={setInventoryRecords} onUpdateSessions={setStockTakeSessions} onUpdateDeliveryNotes={setDeliveryNotes} />;
-      case 'inventory-delivery':
-        return <InventoryManager activeSubTab="delivery" products={products} records={inventoryRecords} sessions={stockTakeSessions} deliveryNotes={deliveryNotes} orders={orders} quotes={quotes} onUpdateProducts={setProducts} onUpdateRecords={setInventoryRecords} onUpdateSessions={setStockTakeSessions} onUpdateDeliveryNotes={setDeliveryNotes} />;
-      case 'finance-projects':
-        return <FinanceManager activeSubTab="projects" accounts={financeAccounts} transactions={financeTransactions} orders={orders} purchaseOrders={purchaseOrders} onUpdateAccounts={setFinanceAccounts} onUpdateTransactions={setFinanceTransactions} />;
-      case 'finance-daily':
-        return <FinanceManager activeSubTab="daily" accounts={financeAccounts} transactions={financeTransactions} orders={orders} purchaseOrders={purchaseOrders} onUpdateAccounts={setFinanceAccounts} onUpdateTransactions={setFinanceTransactions} />;
-      case 'finance-history':
-        return <FinanceManager activeSubTab="history" accounts={financeAccounts} transactions={financeTransactions} orders={orders} purchaseOrders={purchaseOrders} onUpdateAccounts={setFinanceAccounts} onUpdateTransactions={setFinanceTransactions} />;
-      case 'finance-balance':
-        return <FinanceManager activeSubTab="balance" accounts={financeAccounts} transactions={financeTransactions} orders={orders} purchaseOrders={purchaseOrders} onUpdateAccounts={setFinanceAccounts} onUpdateTransactions={setFinanceTransactions} />;
-      case 'after-sales-tickets':
-        return <AfterSalesManager tickets={afterSalesTickets} orders={orders} onUpdate={setAfterSalesTickets} />;
-      case 'supplier-rma':
-        return <SupplierRMAManager rmas={rmas} suppliers={suppliers} products={products} tickets={afterSalesTickets} onUpdate={setRmas} />;
-      case 'products-company':
-        return <CompanyProductLibrary products={products} categories={categories} onUpdate={setProducts} />;
-      case 'products-reference':
-        return <ProductManager products={products} categories={categories} onUpdate={setProducts} />;
-      case 'brands':
-        return <BrandLibrary brands={brands} onUpdate={setBrands} />;
-      case 'categories':
-        return <CategoryManager categories={categories} onUpdate={setCategories} />;
-      case 'contracts':
-        return <ContractManager contracts={contracts} solutions={solutions} templates={contractTemplates} seals={seals} onUpdate={setContracts} />;
-      case 'contract-templates':
-        return <ContractTemplateManager templates={contractTemplates} onUpdate={setContractTemplates} />;
-      case 'seals':
-        return <SealManager seals={seals} onUpdate={setSeals} />;
-      case 'projects':
-        return <ConstructionManager projects={construction} employees={employees} onUpdate={setConstruction} />;
-      case 'sys-employees':
-        return <EmployeeManager employees={employees} departments={departments} roles={roles} onUpdate={setEmployees} />;
-      case 'sys-departments':
-        return <DepartmentManager departments={departments} employees={employees} onUpdate={setDepartments} />;
-      case 'sys-roles':
-        return <RoleManager roles={roles} onUpdate={setRoles} />;
-      case 'sys-notifications':
-        return <NotificationManager notifications={notifications} departments={departments} roles={roles} currentUser={employees[0]} onUpdate={setNotifications} />;
-      default:
-        return <Dashboard solutions={solutions} orders={orders} customers={customers} quotes={quotes} contracts={contracts} onTabChange={setCurrentTab} />;
+      case 'solutions': return <SolutionCenter solutions={solutions} products={products} currentUser={user} onUpdate={setSolutions} onSaveAsTemplate={(newT) => setTemplates([...templates, newT])} onEditSolution={(s) => { setEditingSolution(s); setCurrentTab('designer'); }} onGenerateQuote={handleGenerateQuote} />;
+      case 'templates': return <TemplateManager templates={templates} products={products} onUpdate={setTemplates} />;
+      case 'quotes': return <QuoteManager quotes={quotes} solutions={solutions} products={products} currentUser={user} onUpdate={setQuotes} onCreateOrder={handleCreateOrder} />;
+      case 'orders': return <OrderManager orders={orders} currentUser={user} onUpdate={setOrders} onConfirmPayment={(o) => setOrders(orders.map(x => x.id === o.id ? { ...x, paymentStatus: 'Paid', paidAmount: x.totalAmount, status: OrderStatus.PREPARING } : x))} />;
+      case 'purchase-orders': return <PurchaseOrderManager purchaseOrders={purchaseOrders} suppliers={suppliers} products={products} onUpdate={setPurchaseOrders} />;
+      case 'stocking-orders': return <StockingOrderManager stockingOrders={stockingOrders} products={products} onUpdate={setStockingOrders} />;
+      case 'suppliers': return <SupplierManager suppliers={suppliers} categories={categories} onUpdate={setSuppliers} />;
+      case 'inventory-in': return <InventoryManager activeSubTab="in" products={products} records={inventoryRecords} sessions={stockTakeSessions} deliveryNotes={deliveryNotes} orders={orders} quotes={quotes} onUpdateProducts={setProducts} onUpdateRecords={setInventoryRecords} onUpdateSessions={setStockTakeSessions} onUpdateDeliveryNotes={setDeliveryNotes} />;
+      case 'finance-projects': return <FinanceManager activeSubTab="projects" accounts={financeAccounts} transactions={financeTransactions} orders={orders} purchaseOrders={purchaseOrders} onUpdateAccounts={setFinanceAccounts} onUpdateTransactions={setFinanceTransactions} />;
+      case 'after-sales-tickets': return <AfterSalesManager tickets={afterSalesTickets} orders={orders} onUpdate={setAfterSalesTickets} />;
+      case 'products-company': return <CompanyProductLibrary products={products} categories={categories} onUpdate={setProducts} />;
+      case 'products-reference': return <ProductManager products={products} categories={categories} onUpdate={setProducts} />;
+      case 'brands': return <BrandLibrary brands={brands} onUpdate={setBrands} />;
+      case 'categories': return <CategoryManager categories={categories} onUpdate={setCategories} />;
+      case 'contracts': return <ContractManager contracts={contracts} solutions={solutions} templates={contractTemplates} seals={seals} onUpdate={setContracts} />;
+      case 'projects': return <ConstructionManager projects={construction} employees={employees} onUpdate={setConstruction} />;
+      case 'sys-employees': return <EmployeeManager employees={employees} departments={departments} roles={roles} onUpdate={setEmployees} />;
+      default: return <Dashboard solutions={solutions} orders={orders} customers={customers} quotes={quotes} contracts={contracts} onTabChange={setCurrentTab} />;
     }
   };
 
@@ -277,14 +198,11 @@ const App: React.FC = () => {
       <div className="flex h-screen bg-slate-900 overflow-hidden font-sans">
         <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} onLogout={() => setUser(null)} />
         <main className="flex-1 ml-64 bg-slate-50 relative overflow-hidden">
-          <div className="h-full w-full overflow-y-auto custom-scrollbar">
-             {renderContent()}
-          </div>
+          <div className="h-full w-full overflow-y-auto custom-scrollbar">{renderContent()}</div>
         </main>
       </div>
     </LanguageContext.Provider>
   );
 };
 
-// Fix: Export App as default to resolve error in index.tsx
 export default App;

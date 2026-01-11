@@ -1,12 +1,19 @@
 
 export type SmartBrand = 'MiHome' | 'Aqara' | 'Tuya' | 'Control4' | 'Savand';
 
+export enum DesignStyle {
+  FRENCH = 'French Romantic',
+  MINIMALIST = 'Modern Minimalist',
+  WOOD = 'Japanese Wood',
+  INDUSTRIAL = 'Industrial Loft'
+}
+
 export enum DesignMode {
   AI = 'AI',
   TEMPLATE = 'Template',
   CUSTOM = 'Custom'
 }
-
+// ... rest of the types.ts remain unchanged
 export enum ProjectStatus {
   DRAFT = 'Draft',
   PENDING = 'Pending',
@@ -75,7 +82,6 @@ export interface VectorFloorPlanData {
   rooms: RecognizedRoom[];
 }
 
-// ... Rest of the file remains same
 export enum ConstructionStatus {
   UNASSIGNED = 'Unassigned',
   ONGOING = 'Ongoing',
@@ -526,6 +532,7 @@ export interface Solution {
   vectorData?: VectorFloorPlanData;
   smartBrand?: SmartBrand;
   designMode?: DesignMode;
+  designStyle?: DesignStyle;
 }
 
 export interface User {
