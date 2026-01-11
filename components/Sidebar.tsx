@@ -24,7 +24,7 @@ import {
   UserPlus,
   BadgeDollarSign,
   ShoppingCart,
-  Truck as ProcurementIcon,
+  // Removed aliased Truck import as it was already declared as a named import
   Factory,
   Warehouse,
   ShieldAlert,
@@ -97,7 +97,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange, onLogout }) 
     },
     { 
       id: 'procurement-mgmt', 
-      icon: <ProcurementIcon size={18} />, 
+      // Using the main Truck icon instead of the duplicate aliased one
+      icon: <Truck size={18} />, 
       label: t('procurementMgmt'),
       children: [
         { id: 'purchase-orders', icon: <FileText size={16} />, label: t('purchaseOrder') },

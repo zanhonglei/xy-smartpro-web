@@ -1,27 +1,13 @@
 
-import React, { useState, useMemo } from 'react';
-import { Customer, CustomerStatus, CustomerFile, User } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Customer, CustomerStatus, User } from '../types';
 import { useLanguage } from '../App';
 import { 
-  Search, 
-  Plus, 
-  UserPlus, 
-  Phone, 
-  MapPin, 
-  Home, 
-  Tag as TagIcon, 
-  FileText, 
-  Upload, 
-  X, 
-  Check, 
-  MoreVertical,
-  Filter,
-  Users,
-  Briefcase,
-  ExternalLink,
-  ChevronRight,
-  Clock,
-  ShieldAlert
+  Search, Plus, UserPlus, Phone, MapPin, Home, 
+  Tag as TagIcon, FileText, Upload, X, Check, 
+  Filter, LayoutGrid, List, ChevronLeft, ChevronRight, Clock, UserCheck,
+  // Added missing Edit icon import
+  Edit
 } from 'lucide-react';
 
 interface CustomerManagerProps {
@@ -36,31 +22,37 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Partial<Customer> | null>(null);
-  const [activeTab, setActiveTab] = useState<'info' | 'needs' | 'files'>('info');
+  
+  // Persistent view mode memory for specific customer view
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => 
+    (localStorage.getItem(`view_mode_customers_${type}`) as any) || 'grid'
+  );
+
+  useEffect(() => {
+    localStorage.setItem(`view_mode_customers_${type}`, viewMode);
+  }, [viewMode, type]);
+
+  // Pagination implementation
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(6);
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(c => {
-      const isTypeMatch = type === 'mine' ? c.assignedTo === currentUser.id : !c.assignedTo;
-      const isSearchMatch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          c.phone.includes(searchTerm) || 
-                          c.address.toLowerCase().includes(searchTerm.toLowerCase());
-      return isTypeMatch && isSearchMatch;
+      const matchType = type === 'mine' ? c.assignedTo === currentUser.id : !c.assignedTo;
+      const matchSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         c.phone.includes(searchTerm);
+      return matchType && matchSearch;
     });
   }, [customers, searchTerm, type, currentUser.id]);
 
-  const handleCreateCustomer = () => {
-    setEditingCustomer({
-      status: CustomerStatus.POTENTIAL,
-      needs: [],
-      files: []
-    });
-    setActiveTab('info');
-    setIsModalOpen(true);
-  };
+  const totalPages = Math.ceil(filteredCustomers.length / pageSize) || 1;
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredCustomers.slice(start, start + pageSize);
+  }, [filteredCustomers, currentPage, pageSize]);
 
   const handleSave = () => {
     if (!editingCustomer?.name || !editingCustomer?.phone) return;
-
     if (editingCustomer.id) {
       onUpdate(customers.map(c => c.id === editingCustomer.id ? { ...c, ...editingCustomer } as Customer : c));
     } else {
@@ -69,358 +61,256 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
         id: 'c' + Math.random().toString(36).substr(2, 9),
         createdAt: new Date().toISOString().split('T')[0],
         updatedAt: new Date().toISOString().split('T')[0],
-        assignedTo: type === 'mine' ? currentUser.id : undefined
+        assignedTo: type === 'mine' ? currentUser.id : undefined,
+        status: editingCustomer.status || CustomerStatus.POTENTIAL,
+        files: [],
+        needs: []
       };
-      onUpdate([...customers, newCustomer]);
+      onUpdate([newCustomer, ...customers]);
     }
     setIsModalOpen(false);
-    setEditingCustomer(null);
-  };
-
-  const handleClaim = (id: string) => {
-    onUpdate(customers.map(c => c.id === id ? { ...c, assignedTo: currentUser.id } : c));
-  };
-
-  const toggleNeed = (need: string) => {
-    if (!editingCustomer) return;
-    const currentNeeds = editingCustomer.needs || [];
-    if (currentNeeds.includes(need)) {
-      setEditingCustomer({ ...editingCustomer, needs: currentNeeds.filter(n => n !== need) });
-    } else {
-      setEditingCustomer({ ...editingCustomer, needs: [...currentNeeds, need] });
-    }
   };
 
   const getStatusColor = (status: CustomerStatus) => {
     switch (status) {
       case CustomerStatus.POTENTIAL: return 'bg-slate-100 text-slate-600';
-      case CustomerStatus.INTENTIONAL: return 'bg-blue-100 text-blue-700';
-      case CustomerStatus.CONTRACTED: return 'bg-green-100 text-green-700';
-      case CustomerStatus.VOIDED: return 'bg-red-100 text-red-700';
-      default: return 'bg-slate-100 text-slate-500';
+      case CustomerStatus.INTENTIONAL: return 'bg-blue-50 text-blue-600';
+      case CustomerStatus.CONTRACTED: return 'bg-green-50 text-green-700';
+      case CustomerStatus.VOIDED: return 'bg-red-50 text-red-600';
+      default: return 'bg-slate-50 text-slate-400';
     }
   };
 
   return (
     <div className="flex flex-col h-full bg-slate-50 animate-in fade-in duration-500 overflow-hidden">
-      {/* Top Header */}
+      {/* Dynamic Header */}
       <div className="bg-white border-b px-8 py-6 sticky top-0 z-20 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-              {type === 'pool' ? t('customerPool') : t('myCustomers')}
+                {type === 'pool' ? '客户公海池' : '我的私域客户'}
             </h1>
-            <p className="text-slate-500 font-medium">
-              {type === 'pool' ? '未分配的潜在客户资源池' : '由您负责跟进的深度意向客户'}
-            </p>
+            <p className="text-slate-500 font-medium">维护潜在线索与深度意向客户，驱动销售增长。</p>
           </div>
-          <button 
-            onClick={handleCreateCustomer}
-            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-xl hover:bg-blue-700 transition-all active:scale-95"
-          >
-            <Plus size={20} />
-            <span>{t('newCustomer')}</span>
-          </button>
+          <div className="flex items-center space-x-3">
+             <div className="flex bg-slate-100 p-1 rounded-xl border">
+                <button 
+                    onClick={() => setViewMode('grid')} 
+                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    <LayoutGrid size={20} />
+                </button>
+                <button 
+                    onClick={() => setViewMode('list')} 
+                    className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    <List size={20} />
+                </button>
+             </div>
+             <button 
+                onClick={() => {setEditingCustomer({status: CustomerStatus.POTENTIAL}); setIsModalOpen(true);}} 
+                className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold shadow-xl hover:bg-blue-700 transition-all active:scale-95"
+             >
+                <Plus size={20} />
+                <span>新增客户</span>
+             </button>
+          </div>
         </div>
-
+        
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
-              type="text" 
-              placeholder="搜索姓名、电话或地址..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-6 py-3 rounded-2xl border-none bg-slate-100 outline-none focus:ring-2 focus:ring-blue-500 font-medium transition-all"
+                type="text" 
+                placeholder="搜索姓名、电话或地址..." 
+                value={searchTerm} 
+                onChange={e => {setSearchTerm(e.target.value); setCurrentPage(1);}} 
+                className="w-full pl-12 pr-6 py-3 rounded-2xl bg-slate-100 border-none outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-sm transition-all" 
             />
           </div>
         </div>
       </div>
 
-      {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredCustomers.map(customer => (
-            <div 
-              key={customer.id} 
-              className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all p-8 flex flex-col group"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center text-blue-600 font-black text-xl shadow-inner">
-                    {customer.name.charAt(0)}
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {paginatedData.map(c => (
+              <div key={c.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 flex flex-col hover:shadow-xl transition-all group h-full">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 font-black text-xl shadow-inner">
+                    {c.name.charAt(0)}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800">{customer.name}</h3>
-                    <div className="flex items-center space-x-2 text-slate-400 text-xs mt-1">
+                  <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${getStatusColor(c.status)}`}>
+                    {c.status}
+                  </span>
+                </div>
+                <div className="space-y-4 mb-8 flex-1">
+                  <h3 className="text-2xl font-black text-slate-900">{c.name}</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-3 text-slate-600">
+                        <Phone size={16} className="text-slate-300" />
+                        <span className="text-sm font-semibold">{c.phone}</span>
+                    </div>
+                    <div className="flex items-center space-x-3 text-slate-600">
+                        <MapPin size={16} className="text-slate-300" />
+                        <span className="text-sm font-medium truncate">{c.address}</span>
+                    </div>
+                    <div className="flex items-center space-x-3 text-slate-600">
+                        <Home size={16} className="text-slate-300" />
+                        <span className="text-xs font-bold uppercase text-slate-400">{c.houseType || '未填写房型'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-auto pt-6 border-t flex items-center justify-between">
+                   <button 
+                    onClick={() => {setEditingCustomer(c); setIsModalOpen(true);}} 
+                    className="text-blue-600 text-sm font-bold hover:underline flex items-center space-x-1"
+                   >
+                     <span>编辑资料</span>
+                     <ChevronRight size={14} />
+                   </button>
+                   <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center space-x-1">
                       <Clock size={12} />
-                      <span>{customer.createdAt}</span>
-                    </div>
-                  </div>
-                </div>
-                <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${getStatusColor(customer.status)}`}>
-                  {t(customer.status.toLowerCase() as any)}
-                </span>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center space-x-3 text-slate-600">
-                  <Phone size={16} className="text-slate-400" />
-                  <span className="text-sm font-semibold">{customer.phone}</span>
-                </div>
-                <div className="flex items-center space-x-3 text-slate-600">
-                  <MapPin size={16} className="text-slate-400" />
-                  <span className="text-sm font-medium truncate">{customer.address}</span>
-                </div>
-                <div className="flex items-center space-x-3 text-slate-600">
-                  <Home size={16} className="text-slate-400" />
-                  <span className="text-sm font-medium">{customer.houseType}</span>
+                      <span>{c.createdAt} 创建</span>
+                   </div>
                 </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-[2.5rem] border overflow-hidden shadow-sm">
+             <table className="w-full text-left">
+                <thead className="bg-slate-50 border-b text-xs font-black text-slate-400 uppercase tracking-widest">
+                   <tr>
+                      <th className="px-8 py-5">客户姓名</th>
+                      <th className="px-8 py-5">联系电话</th>
+                      <th className="px-8 py-5">跟进状态</th>
+                      <th className="px-8 py-5">房屋地址</th>
+                      <th className="px-8 py-5">房型信息</th>
+                      <th className="px-8 py-5 text-right">操作</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                   {paginatedData.map(c => (
+                      <tr key={c.id} className="hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => {setEditingCustomer(c); setIsModalOpen(true);}}>
+                         <td className="px-8 py-5">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 font-black text-xs uppercase">{c.name.charAt(0)}</div>
+                                <span className="font-bold text-slate-800">{c.name}</span>
+                            </div>
+                         </td>
+                         <td className="px-8 py-5 font-semibold text-slate-600">{c.phone}</td>
+                         <td className="px-8 py-5">
+                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${getStatusColor(c.status)}`}>
+                                {c.status}
+                            </span>
+                         </td>
+                         <td className="px-8 py-5 text-sm text-slate-500 truncate max-w-xs">{c.address}</td>
+                         <td className="px-8 py-5 text-slate-400 font-bold uppercase text-[10px] tracking-tight">{c.houseType}</td>
+                         <td className="px-8 py-5 text-right">
+                            {/* Fixed missing Edit icon usage */}
+                            <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Edit size={16} /></button>
+                         </td>
+                      </tr>
+                   ))}
+                </tbody>
+             </table>
+          </div>
+        )}
 
-              <div className="flex flex-wrap gap-2 mb-8">
-                {customer.needs.slice(0, 3).map(need => (
-                  <span key={need} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                    {need}
-                  </span>
-                ))}
-                {customer.needs.length > 3 && (
-                  <span className="px-3 py-1 bg-slate-100 text-slate-400 rounded-full text-[10px] font-bold">
-                    +{customer.needs.length - 3}
-                  </span>
-                )}
-              </div>
+        {/* Empty State */}
+        {filteredCustomers.length === 0 && (
+          <div className="py-32 text-center space-y-6 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
+            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-200">
+                <UserCheck size={48} />
+            </div>
+            <p className="text-slate-400 text-xl font-medium">{t('noResults')}</p>
+          </div>
+        )}
 
-              <div className="mt-auto pt-6 border-t flex items-center justify-between">
-                {type === 'pool' ? (
-                  <button 
-                    onClick={() => handleClaim(customer.id)}
-                    className="w-full flex items-center justify-center space-x-2 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg"
-                  >
-                    <UserPlus size={18} />
-                    <span>领用至我的客户</span>
-                  </button>
-                ) : (
-                  <>
+        {/* Unified Pagination */}
+        {filteredCustomers.length > 0 && (
+          <div className="mt-12 flex items-center justify-between bg-white px-8 py-5 rounded-[2rem] border shadow-sm">
+             <p className="text-sm font-bold text-slate-500">
+                第 {currentPage} 页 / 共 {totalPages} 页 (总计 {filteredCustomers.length} 条)
+             </p>
+             <div className="flex space-x-2">
+                <button 
+                    disabled={currentPage === 1} 
+                    onClick={() => setCurrentPage(p => p - 1)} 
+                    className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-30 transition-all"
+                >
+                    <ChevronLeft size={20} />
+                </button>
+                <div className="flex space-x-1">
+                    {[...Array(totalPages)].map((_, i) => (
                     <button 
-                      onClick={() => { setEditingCustomer(customer); setIsModalOpen(true); }}
-                      className="text-blue-600 text-sm font-bold flex items-center hover:underline"
+                        key={i} 
+                        onClick={() => setCurrentPage(i+1)} 
+                        className={`w-10 h-10 rounded-xl font-black text-xs transition-all ${currentPage === i+1 ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
                     >
-                      查看详情 <ChevronRight size={16} />
+                        {i+1}
                     </button>
-                    <div className="flex items-center space-x-1 text-slate-400 text-xs font-bold">
-                      <FileText size={14} />
-                      <span>{customer.files.length} 份资料</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {filteredCustomers.length === 0 && (
-            <div className="col-span-full py-32 text-center border-2 border-dashed rounded-[3rem] space-y-4 bg-white/50">
-               <Users size={48} className="mx-auto text-slate-200" />
-               <p className="text-slate-400 font-medium">暂无匹配的客户记录</p>
-            </div>
-          )}
-        </div>
+                    ))}
+                </div>
+                <button 
+                    disabled={currentPage === totalPages} 
+                    onClick={() => setCurrentPage(p => p + 1)} 
+                    className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-30 transition-all"
+                >
+                    <ChevronRight size={20} />
+                </button>
+             </div>
+          </div>
+        )}
       </div>
 
-      {/* Modal Overlay */}
+      {/* Detail Modal */}
       {isModalOpen && editingCustomer && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white rounded-[3.5rem] w-full max-w-4xl h-[85vh] shadow-2xl overflow-hidden flex flex-col border border-white/20">
-            {/* Modal Header */}
-            <div className="p-10 border-b bg-slate-50 flex items-center justify-between">
-              <div className="flex items-center space-x-6">
-                 <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
-                    <UserPlus size={32} />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="bg-white rounded-[3.5rem] w-full max-w-lg shadow-2xl p-10 space-y-8 animate-in zoom-in duration-300 border">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">客户信息管理</h3>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors"><X size={24}/></button>
+              </div>
+              <div className="space-y-5">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">客户全名</label>
+                    <input type="text" placeholder="请输入客户姓名" value={editingCustomer.name || ''} onChange={e => setEditingCustomer({...editingCustomer, name: e.target.value})} className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all bg-slate-50 focus:bg-white" />
                  </div>
-                 <div>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                      {editingCustomer.id ? editingCustomer.name : t('newCustomer')}
-                    </h3>
-                    <p className="text-slate-500 font-medium">完善客户画像，助力精准转化</p>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">联系电话</label>
+                    <input type="text" placeholder="客户手机号码" value={editingCustomer.phone || ''} onChange={e => setEditingCustomer({...editingCustomer, phone: e.target.value})} className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all bg-slate-50 focus:bg-white" />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">详细收货地址</label>
+                    <input type="text" placeholder="客户房屋所在地" value={editingCustomer.address || ''} onChange={e => setEditingCustomer({...editingCustomer, address: e.target.value})} className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all bg-slate-50 focus:bg-white" />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">房屋类型</label>
+                        <select value={editingCustomer.houseType} onChange={e => setEditingCustomer({...editingCustomer, houseType: e.target.value})} className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 font-bold bg-slate-50">
+                            <option value="">-- 选择房型 --</option>
+                            <option value="三室二厅">三室二厅</option>
+                            <option value="别墅">豪华别墅</option>
+                            <option value="公寓">精装公寓</option>
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">跟进状态</label>
+                        <select value={editingCustomer.status} onChange={e => setEditingCustomer({...editingCustomer, status: e.target.value as CustomerStatus})} className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 font-bold bg-slate-50">
+                            <option value={CustomerStatus.POTENTIAL}>潜在客户</option>
+                            <option value={CustomerStatus.INTENTIONAL}>意向深聊</option>
+                            <option value={CustomerStatus.CONTRACTED}>已签约</option>
+                        </select>
+                    </div>
                  </div>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-200 transition-all">
-                <X size={28} />
-              </button>
-            </div>
-
-            {/* Modal Tabs */}
-            <div className="px-10 py-4 bg-white border-b flex space-x-8">
-              {[
-                { id: 'info', label: '基础信息' },
-                { id: 'needs', label: '核心需求' },
-                { id: 'files', label: '相关资料' }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`py-2 text-sm font-black uppercase tracking-widest transition-all relative ${
-                    activeTab === tab.id ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  {tab.label}
-                  {activeTab === tab.id && <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600 rounded-full" />}
-                </button>
-              ))}
-            </div>
-
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
-              {activeTab === 'info' && (
-                <div className="grid grid-cols-2 gap-8 animate-in slide-in-from-bottom-4 duration-500">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">客户姓名</label>
-                    <input 
-                      type="text" 
-                      value={editingCustomer.name || ''}
-                      onChange={e => setEditingCustomer({ ...editingCustomer, name: e.target.value })}
-                      className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all"
-                      placeholder="请输入客户姓名"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">联系电话</label>
-                    <input 
-                      type="text" 
-                      value={editingCustomer.phone || ''}
-                      onChange={e => setEditingCustomer({ ...editingCustomer, phone: e.target.value })}
-                      className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all"
-                      placeholder="138xxxx8888"
-                    />
-                  </div>
-                  <div className="col-span-2 space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">房屋地址</label>
-                    <input 
-                      type="text" 
-                      value={editingCustomer.address || ''}
-                      onChange={e => setEditingCustomer({ ...editingCustomer, address: e.target.value })}
-                      className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all"
-                      placeholder="省市区/街道/小区门牌号"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">房屋类型</label>
-                    <select 
-                      value={editingCustomer.houseType || ''}
-                      onChange={e => setEditingCustomer({ ...editingCustomer, houseType: e.target.value })}
-                      className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all bg-white"
-                    >
-                      <option value="">请选择类型</option>
-                      <option value="Villa">独栋别墅</option>
-                      <option value="Townhouse">联排别墅</option>
-                      <option value="Apartment">大平层/公寓</option>
-                      <option value="Commercial">商业空间</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">跟进状态</label>
-                    <select 
-                      value={editingCustomer.status || CustomerStatus.POTENTIAL}
-                      onChange={e => setEditingCustomer({ ...editingCustomer, status: e.target.value as CustomerStatus })}
-                      className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all bg-white"
-                    >
-                      <option value={CustomerStatus.POTENTIAL}>潜在客户</option>
-                      <option value={CustomerStatus.INTENTIONAL}>意向客户</option>
-                      <option value={CustomerStatus.CONTRACTED}>已签约</option>
-                      <option value={CustomerStatus.VOIDED}>作废</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'needs' && (
-                <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-                  <div className="space-y-4">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">热门需求库</label>
-                     <div className="flex flex-wrap gap-3">
-                        {['全屋语音控制', '全屋灯光智控', '安防联动', '影音场景', '全宅WiFi覆盖', '智能遮阳', '环境监测', '老人看护', '全宅净水'].map(need => (
-                          <button
-                            key={need}
-                            onClick={() => toggleNeed(need)}
-                            className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all border-2 ${
-                              editingCustomer.needs?.includes(need) 
-                              ? 'bg-blue-600 border-blue-600 text-white shadow-lg' 
-                              : 'bg-slate-50 border-transparent text-slate-500 hover:border-slate-200'
-                            }`}
-                          >
-                            {need}
-                          </button>
-                        ))}
-                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">补充描述</label>
-                    <textarea 
-                      className="w-full h-32 px-6 py-4 rounded-2xl border-2 border-slate-100 focus:border-blue-500 outline-none font-medium text-slate-700 resize-none"
-                      placeholder="记录客户的其他个性化需求细节..."
-                    />
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'files' && (
-                <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-8 border-4 border-dashed border-slate-100 rounded-[2.5rem] flex flex-col items-center justify-center space-y-4 hover:border-blue-200 transition-colors bg-slate-50/50 cursor-pointer group">
-                      <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-blue-500 transition-colors shadow-sm">
-                        <Upload size={32} />
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold text-slate-700">点击或拖拽上传户型图</p>
-                        <p className="text-xs text-slate-400 mt-1 font-bold uppercase tracking-widest">PNG, JPG, PDF (MAX 10MB)</p>
-                      </div>
-                    </div>
-                    <div className="p-8 border-4 border-dashed border-slate-100 rounded-[2.5rem] flex flex-col items-center justify-center space-y-4 hover:border-blue-200 transition-colors bg-slate-50/50 cursor-pointer group">
-                      <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-300 group-hover:text-blue-500 transition-colors shadow-sm">
-                        <Plus size={32} />
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold text-slate-700">添加施工进度照片/资料</p>
-                        <p className="text-xs text-slate-400 mt-1 font-bold uppercase tracking-widest">多选上传</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {editingCustomer.files && editingCustomer.files.length > 0 ? (
-                    <div className="grid grid-cols-4 gap-4">
-                       {editingCustomer.files.map(file => (
-                         <div key={file.id} className="group relative aspect-square rounded-2xl border overflow-hidden">
-                           <img src={file.url} className="w-full h-full object-cover" alt="" />
-                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <button className="p-2 bg-white rounded-lg text-red-500 shadow-xl"><X size={16} /></button>
-                           </div>
-                         </div>
-                       ))}
-                    </div>
-                  ) : (
-                    <div className="py-12 text-center">
-                       <ShieldAlert className="mx-auto text-slate-200 mb-4" size={48} />
-                       <p className="text-slate-400 font-medium italic">暂未上传房屋资料，AI 辅助设计功能将无法使用</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-10 border-t bg-slate-50 flex justify-end space-x-4">
-              <button onClick={() => setIsModalOpen(false)} className="px-10 py-4 font-bold text-slate-500 hover:text-slate-800 transition-all">
-                {t('cancel')}
-              </button>
-              <button 
-                onClick={handleSave}
-                className="px-12 py-4 bg-slate-900 text-white rounded-[2rem] font-bold shadow-2xl hover:bg-black hover:scale-105 transition-all flex items-center space-x-3"
-              >
-                <Check size={20} />
-                <span>{editingCustomer.id ? t('save') : '确认入库'}</span>
-              </button>
-            </div>
-          </div>
+              <div className="pt-6 flex space-x-4">
+                 <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all">取消</button>
+                 <button onClick={handleSave} className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all">确认并保存</button>
+              </div>
+           </div>
         </div>
       )}
     </div>
