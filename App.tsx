@@ -143,6 +143,11 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentTab) {
       case 'dashboard': return <Dashboard solutions={solutions} orders={orders} customers={customers} quotes={quotes} contracts={contracts} onTabChange={setCurrentTab} />;
+      
+      // Customer Management
+      case 'customer-pool': return <CustomerManager type="pool" customers={customers} currentUser={user} onUpdate={setCustomers} />;
+      case 'my-customers': return <CustomerManager type="mine" customers={customers} currentUser={user} onUpdate={setCustomers} />;
+
       case 'designer':
         return (
           <FloorPlanDesigner 
@@ -179,16 +184,42 @@ const App: React.FC = () => {
       case 'purchase-orders': return <PurchaseOrderManager purchaseOrders={purchaseOrders} suppliers={suppliers} products={products} onUpdate={setPurchaseOrders} />;
       case 'stocking-orders': return <StockingOrderManager stockingOrders={stockingOrders} products={products} onUpdate={setStockingOrders} />;
       case 'suppliers': return <SupplierManager suppliers={suppliers} categories={categories} onUpdate={setSuppliers} />;
+      
+      // Inventory Sub-tabs
       case 'inventory-in': return <InventoryManager activeSubTab="in" products={products} records={inventoryRecords} sessions={stockTakeSessions} deliveryNotes={deliveryNotes} orders={orders} quotes={quotes} onUpdateProducts={setProducts} onUpdateRecords={setInventoryRecords} onUpdateSessions={setStockTakeSessions} onUpdateDeliveryNotes={setDeliveryNotes} />;
+      case 'inventory-out': return <InventoryManager activeSubTab="out" products={products} records={inventoryRecords} sessions={stockTakeSessions} deliveryNotes={deliveryNotes} orders={orders} quotes={quotes} onUpdateProducts={setProducts} onUpdateRecords={setInventoryRecords} onUpdateSessions={setStockTakeSessions} onUpdateDeliveryNotes={setDeliveryNotes} />;
+      case 'inventory-take': return <InventoryManager activeSubTab="take" products={products} records={inventoryRecords} sessions={stockTakeSessions} deliveryNotes={deliveryNotes} orders={orders} quotes={quotes} onUpdateProducts={setProducts} onUpdateRecords={setInventoryRecords} onUpdateSessions={setStockTakeSessions} onUpdateDeliveryNotes={setDeliveryNotes} />;
+      case 'inventory-delivery': return <InventoryManager activeSubTab="delivery" products={products} records={inventoryRecords} sessions={stockTakeSessions} deliveryNotes={deliveryNotes} orders={orders} quotes={quotes} onUpdateProducts={setProducts} onUpdateRecords={setInventoryRecords} onUpdateSessions={setStockTakeSessions} onUpdateDeliveryNotes={setDeliveryNotes} />;
+      
+      // Finance Sub-tabs
       case 'finance-projects': return <FinanceManager activeSubTab="projects" accounts={financeAccounts} transactions={financeTransactions} orders={orders} purchaseOrders={purchaseOrders} onUpdateAccounts={setFinanceAccounts} onUpdateTransactions={setFinanceTransactions} />;
+      case 'finance-daily': return <FinanceManager activeSubTab="daily" accounts={financeAccounts} transactions={financeTransactions} orders={orders} purchaseOrders={purchaseOrders} onUpdateAccounts={setFinanceAccounts} onUpdateTransactions={setFinanceTransactions} />;
+      case 'finance-history': return <FinanceManager activeSubTab="history" accounts={financeAccounts} transactions={financeTransactions} orders={orders} purchaseOrders={purchaseOrders} onUpdateAccounts={setFinanceAccounts} onUpdateTransactions={setFinanceTransactions} />;
+      case 'finance-balance': return <FinanceManager activeSubTab="balance" accounts={financeAccounts} transactions={financeTransactions} orders={orders} purchaseOrders={purchaseOrders} onUpdateAccounts={setFinanceAccounts} onUpdateTransactions={setFinanceTransactions} />;
+      
+      // After-sales
       case 'after-sales-tickets': return <AfterSalesManager tickets={afterSalesTickets} orders={orders} onUpdate={setAfterSalesTickets} />;
+      case 'supplier-rma': return <SupplierRMAManager rmas={rmas} suppliers={suppliers} products={products} tickets={afterSalesTickets} onUpdate={setRmas} />;
+
+      // Product Management
       case 'products-company': return <CompanyProductLibrary products={products} categories={categories} onUpdate={setProducts} />;
       case 'products-reference': return <ProductManager products={products} categories={categories} onUpdate={setProducts} />;
       case 'brands': return <BrandLibrary brands={brands} onUpdate={setBrands} />;
       case 'categories': return <CategoryManager categories={categories} onUpdate={setCategories} />;
+      
+      // E-Contract
       case 'contracts': return <ContractManager contracts={contracts} solutions={solutions} templates={contractTemplates} seals={seals} onUpdate={setContracts} />;
+      case 'contract-templates': return <ContractTemplateManager templates={contractTemplates} onUpdate={setContractTemplates} />;
+      case 'seals': return <SealManager seals={seals} onUpdate={setSeals} />;
+
       case 'projects': return <ConstructionManager projects={construction} employees={employees} onUpdate={setConstruction} />;
+      
+      // System Management
       case 'sys-employees': return <EmployeeManager employees={employees} departments={departments} roles={roles} onUpdate={setEmployees} />;
+      case 'sys-departments': return <DepartmentManager departments={departments} employees={employees} onUpdate={setDepartments} />;
+      case 'sys-roles': return <RoleManager roles={roles} onUpdate={setRoles} />;
+      case 'sys-notifications': return <NotificationManager notifications={notifications} departments={departments} roles={roles} currentUser={employees[0]} onUpdate={setNotifications} />;
+
       default: return <Dashboard solutions={solutions} orders={orders} customers={customers} quotes={quotes} contracts={contracts} onTabChange={setCurrentTab} />;
     }
   };
