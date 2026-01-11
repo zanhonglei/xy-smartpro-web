@@ -6,7 +6,7 @@ import {
   ConstructionProject, PurchaseOrder, StockingOrder, Supplier,
   AfterSalesTicket, SupplierRMA, FinanceAccount, FinanceTransaction,
   Employee, Department, Role, SystemNotification, ProjectStatus, QuoteStatus, OrderStatus,
-  InventoryRecord, StockTakeSession, DeliveryNote, InventoryMovementType, InventoryReason, DesignStyle
+  InventoryRecord, StockTakeSession, DeliveryNote, InventoryMovementType, InventoryReason, DesignStyle, Room, DevicePoint
 } from './types';
 import { 
   MOCK_SOLUTIONS, MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_BRANDS, MOCK_TEMPLATES,
@@ -93,14 +93,15 @@ const App: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>(MOCK_ROLES);
   const [notifications, setNotifications] = useState<SystemNotification[]>(MOCK_NOTIFICATIONS);
   const [editingSolution, setEditingSolution] = useState<Solution | null>(null);
+  const [initialActiveQuoteId, setInitialActiveQuoteId] = useState<string | null>(null);
 
   const t = (key: keyof typeof translations['en']) => {
     return translations[lang][key] || key;
   };
 
-  const handleGenerateQuote = (solution: Solution) => {
+  const generateQuoteFromData = (devices: DevicePoint[], rooms: Room[], customer: {id: string, name: string}, style: DesignStyle) => {
     const itemMap = new Map<string, any>();
-    solution.devices.forEach(d => {
+    devices.forEach(d => {
         const p = products.find(prod => prod.id === d.productId);
         if(!p) return;
         if(itemMap.has(d.productId)) {
@@ -112,24 +113,33 @@ const App: React.FC = () => {
         }
     });
 
+    const itemsTotal = Array.from(itemMap.values()).reduce((s, i) => s + i.total, 0);
+    const installationFee = rooms.length * 200; // Mock calculation
+    const quoteId = 'Q-' + new Date().getTime();
+    
     const newQuote: Quote = {
-        id: 'Q-' + new Date().getTime(),
-        solutionId: solution.id,
-        solutionName: solution.name,
-        customerId: solution.customerId,
-        customerName: solution.customerName,
+        id: quoteId,
+        solutionId: 'TEMP-' + new Date().getTime(),
+        solutionName: `${customer.name} 的智能设计方案`,
+        customerId: customer.id,
+        customerName: customer.name,
         items: Array.from(itemMap.values()),
-        installationFee: 500,
-        debugFee: 200,
-        shippingFee: 50,
+        installationFee,
+        debugFee: 300,
+        shippingFee: 100,
         tax: 0,
         discount: 0,
-        totalAmount: Array.from(itemMap.values()).reduce((s, i) => s + i.total, 0) + 750,
+        totalAmount: itemsTotal + installationFee + 400,
         status: QuoteStatus.DRAFT,
         createdAt: new Date().toISOString()
     };
-    setQuotes([...quotes, newQuote]);
+    setQuotes([newQuote, ...quotes]);
+    setInitialActiveQuoteId(quoteId);
     setCurrentTab('quotes');
+  };
+
+  const handleGenerateQuote = (solution: Solution) => {
+    generateQuoteFromData(solution.devices, solution.rooms, {id: solution.customerId, name: solution.customerName}, solution.designStyle || DesignStyle.MINIMALIST);
   };
 
   const handleCreateOrder = (quote: Quote) => {
@@ -152,13 +162,14 @@ const App: React.FC = () => {
         return (
           <FloorPlanDesigner 
             products={products} 
+            customers={customers}
             initialSolution={editingSolution}
-            onSave={(devices, rooms, originalId, vectorData, style) => {
+            onSave={(devices, rooms, originalId, vectorData, style, customerData) => {
               const newSolution: Solution = {
                 id: originalId || 's' + Math.random().toString(36).substr(2, 9),
-                name: (originalId ? solutions.find(s => s.id === originalId)?.name : 'New Design') || 'Design',
-                customerId: 'c1',
-                customerName: '张三',
+                name: (originalId ? solutions.find(s => s.id === originalId)?.name : `${customerData.name} 的智能设计方案`) || 'Design',
+                customerId: customerData.id,
+                customerName: customerData.name,
                 status: ProjectStatus.DRAFT,
                 floorPlanUrl: 'https://picsum.photos/seed/plan/800/600',
                 rooms,
@@ -173,13 +184,24 @@ const App: React.FC = () => {
               if (originalId) { setSolutions(solutions.map(s => s.id === originalId ? newSolution : s)); }
               else { setSolutions([newSolution, ...solutions]); }
               setEditingSolution(null);
-              setCurrentTab('solutions');
             }} 
+            onGenerateQuote={generateQuoteFromData}
           />
         );
       case 'solutions': return <SolutionCenter solutions={solutions} products={products} currentUser={user} onUpdate={setSolutions} onSaveAsTemplate={(newT) => setTemplates([...templates, newT])} onEditSolution={(s) => { setEditingSolution(s); setCurrentTab('designer'); }} onGenerateQuote={handleGenerateQuote} />;
       case 'templates': return <TemplateManager templates={templates} products={products} onUpdate={setTemplates} />;
-      case 'quotes': return <QuoteManager quotes={quotes} solutions={solutions} products={products} currentUser={user} onUpdate={setQuotes} onCreateOrder={handleCreateOrder} />;
+      case 'quotes': 
+        return (
+          <QuoteManager 
+            quotes={quotes} 
+            solutions={solutions} 
+            products={products} 
+            currentUser={user} 
+            onUpdate={setQuotes} 
+            onCreateOrder={handleCreateOrder}
+            initialActiveQuoteId={initialActiveQuoteId}
+          />
+        );
       case 'orders': return <OrderManager orders={orders} currentUser={user} onUpdate={setOrders} onConfirmPayment={(o) => setOrders(orders.map(x => x.id === o.id ? { ...x, paymentStatus: 'Paid', paidAmount: x.totalAmount, status: OrderStatus.PREPARING } : x))} />;
       case 'purchase-orders': return <PurchaseOrderManager purchaseOrders={purchaseOrders} suppliers={suppliers} products={products} onUpdate={setPurchaseOrders} />;
       case 'stocking-orders': return <StockingOrderManager stockingOrders={stockingOrders} products={products} onUpdate={setStockingOrders} />;
@@ -224,10 +246,16 @@ const App: React.FC = () => {
     }
   };
 
+  // Reset initial quote ID when tab changes
+  const handleTabChange = (tab: string) => {
+    setCurrentTab(tab);
+    setInitialActiveQuoteId(null);
+  };
+
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
       <div className="flex h-screen bg-slate-900 overflow-hidden font-sans">
-        <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} onLogout={() => setUser(null)} />
+        <Sidebar currentTab={currentTab} onTabChange={handleTabChange} onLogout={() => setUser(null)} />
         <main className="flex-1 ml-64 bg-slate-50 relative overflow-hidden">
           <div className="h-full w-full overflow-y-auto custom-scrollbar">{renderContent()}</div>
         </main>
