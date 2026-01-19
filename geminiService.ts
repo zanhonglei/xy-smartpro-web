@@ -41,7 +41,9 @@ export const generateSpatialSolution = async (req: SpatialRequest, availableProd
 
   try {
     const imageData = req.image.includes(',') ? req.image.split(',')[1] : req.image;
-    const mimeType = req.image.match(/data:([^;]+);base64/)?.[1] || 'image/png';
+    // Standardize mimeType for Gemini API
+    const rawMime = req.image.match(/data:([^;]+);base64/)?.[1] || 'image/png';
+    const mimeType = rawMime === 'image/svg+xml' ? 'image/png' : rawMime;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',

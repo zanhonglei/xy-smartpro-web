@@ -13,7 +13,7 @@ export enum DesignMode {
   TEMPLATE = 'Template',
   CUSTOM = 'Custom'
 }
-// ... rest of the types.ts remain unchanged
+
 export enum ProjectStatus {
   DRAFT = 'Draft',
   PENDING = 'Pending',
@@ -479,6 +479,7 @@ export interface DevicePoint {
   y: number;
   roomName: string;
   status: 'on' | 'off';
+  value?: number; // 0-100 用于窗帘、灯光亮度等
 }
 
 export interface Room {

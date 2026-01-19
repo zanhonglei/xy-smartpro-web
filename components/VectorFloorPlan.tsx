@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VectorFloorPlanData, DevicePoint, Product } from '../types';
 import { CATEGORY_ICONS } from '../constants';
-import { Trash2, Info, Power, ZoomIn, ZoomOut, Maximize, MousePointer2, X } from 'lucide-react';
+import { Trash2, Info, Power, ZoomIn, ZoomOut, Maximize, MousePointer2, X, Columns, Sliders } from 'lucide-react';
 
 interface VectorFloorPlanProps {
   data: VectorFloorPlanData;
@@ -117,9 +117,10 @@ const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({
           {devices.map(d => {
             const p = getProductById(d.productId);
             const isSelected = selectedPointId === d.id;
+            const isCurtain = p?.category === '窗帘电机';
             return (
               <g key={d.id} className="device-point cursor-move" onMouseDown={(e) => { e.stopPropagation(); setSelectedPointId(d.id); setDraggingId(d.id); }}>
-                <circle cx={d.x} cy={d.y} r={isSelected ? 14 : 10} className={`transition-all ${d.status === 'on' ? 'fill-blue-500' : 'fill-slate-50'}`} stroke="white" strokeWidth="2" />
+                <circle cx={d.x} cy={d.y} r={isSelected ? 14 : 10} className={`transition-all ${ (d.status === 'on' || (d.value && d.value > 0)) ? 'fill-yellow-400' : 'fill-slate-50'}`} stroke="white" strokeWidth="2" />
                 <g transform={`translate(${d.x - 6}, ${d.y - 6}) scale(0.6)`} className="fill-slate-900 pointer-events-none">{(CATEGORY_ICONS as any)[p?.category || '']} </g>
               </g>
             );
@@ -128,30 +129,61 @@ const VectorFloorPlan: React.FC<VectorFloorPlanProps> = ({
       </div>
 
       {selectedPointId && (
-        <div className="absolute top-8 right-8 w-72 bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[2.5rem] p-6 text-white shadow-2xl animate-in fade-in slide-in-from-right duration-300">
+        <div className="absolute top-8 right-8 w-80 bg-slate-900/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 text-white shadow-2xl animate-in fade-in slide-in-from-right duration-300">
            {(() => {
               const d = devices.find(x => x.id === selectedPointId);
               const p = d ? getProductById(d.productId) : null;
               if (!d || !p) return null;
+              const isCurtain = p.category === '窗帘电机';
+
               return (
-                <div className="space-y-6">
+                <div className="space-y-8">
                    <div className="flex items-center justify-between">
-                      <h4 className="font-black text-sm uppercase tracking-widest text-blue-400">点位编辑</h4>
-                      <button onClick={() => setSelectedPointId(null)} className="text-white hover:text-slate-300"><X size={18} /></button>
-                   </div>
-                   <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-blue-400">{(CATEGORY_ICONS as any)[p.category]}</div>
-                      <div className="overflow-hidden">
-                        <p className="font-bold text-sm leading-tight truncate">{p.name}</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{p.brand}</p>
+                      <div className="flex items-center space-x-3">
+                         <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">{(CATEGORY_ICONS as any)[p.category]}</div>
+                         <h4 className="font-black text-sm uppercase tracking-widest text-white">设备调试</h4>
                       </div>
+                      <button onClick={() => setSelectedPointId(null)} className="text-slate-500 hover:text-white transition-colors"><X size={20} /></button>
                    </div>
-                   <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => onUpdateDevice(d.id, { status: d.status === 'on' ? 'off' : 'on' })} className={`flex items-center justify-center space-x-2 py-3 rounded-xl font-bold text-xs transition-all ${d.status === 'on' ? 'bg-green-500 shadow-lg' : 'bg-white/5 border border-white/5 text-slate-400'}`}>
-                        <Power size={14} /> <span>{d.status === 'on' ? '开启' : '关闭'}</span>
-                      </button>
-                      <button onClick={() => { onRemoveDevice(d.id); setSelectedPointId(null); }} className="flex items-center justify-center space-x-2 py-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-bold text-xs hover:bg-red-500 hover:text-white transition-all">
-                        <Trash2 size={14} /> <span>移除点位</span>
+                   
+                   <div className="space-y-1">
+                      <p className="font-black text-lg leading-tight truncate">{p.name}</p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{p.brand} · {d.roomName}</p>
+                   </div>
+
+                   {isCurtain ? (
+                      <div className="space-y-6">
+                         <div className="space-y-3">
+                            <div className="flex justify-between items-center text-xs font-black uppercase text-slate-400">
+                               <span>开合比例</span>
+                               <span className="text-yellow-400">{d.value ?? 0}%</span>
+                            </div>
+                            <input 
+                               type="range" min="0" max="100" 
+                               value={d.value ?? 0}
+                               onChange={(e) => onUpdateDevice(d.id, { value: Number(e.target.value), status: Number(e.target.value) > 0 ? 'on' : 'off' })}
+                               className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-yellow-400"
+                            />
+                         </div>
+                         <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => onUpdateDevice(d.id, { value: 0, status: 'off' })} className="py-3 bg-white/5 border border-white/5 rounded-2xl font-black text-[10px] uppercase hover:bg-white/10 transition-all">全开 (0%)</button>
+                            <button onClick={() => onUpdateDevice(d.id, { value: 100, status: 'on' })} className="py-3 bg-yellow-400 text-slate-900 rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-300 transition-all">全闭 (100%)</button>
+                         </div>
+                      </div>
+                   ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        <button onClick={() => onUpdateDevice(d.id, { status: d.status === 'on' ? 'off' : 'on' })} className={`flex items-center justify-center space-x-2 py-4 rounded-2xl font-black text-xs transition-all ${d.status === 'on' ? 'bg-green-500 shadow-lg shadow-green-500/20' : 'bg-white/5 border border-white/5 text-slate-400'}`}>
+                          <Power size={14} /> <span>{d.status === 'on' ? '开启' : '关闭'}</span>
+                        </button>
+                        <button className="flex items-center justify-center space-x-2 py-4 bg-white/5 border border-white/5 rounded-2xl font-black text-xs text-slate-400 hover:text-white transition-all">
+                           <Sliders size={14} /> <span>详情</span>
+                        </button>
+                      </div>
+                   )}
+
+                   <div className="pt-6 border-t border-white/5 flex justify-center">
+                      <button onClick={() => { onRemoveDevice(d.id); setSelectedPointId(null); }} className="text-red-400/60 hover:text-red-400 font-bold text-[10px] uppercase tracking-widest flex items-center space-x-2 transition-all">
+                        <Trash2 size={12} /> <span>从方案中移除</span>
                       </button>
                    </div>
                 </div>

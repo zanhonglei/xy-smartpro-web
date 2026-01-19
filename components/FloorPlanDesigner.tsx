@@ -6,7 +6,7 @@ import {
   Plus, Save, Sparkles, Loader2, X, ChevronRight, ChevronLeft, 
   Trash2, Layers, Search, Cpu, Box, Layout, 
   List, Share2, Eye, Info, CheckCircle2, ShoppingCart, 
-  DollarSign, Zap, HardDrive, MousePointer2, Grid, Filter, Check, Palette, User, Phone, MapPin, ArrowRight, ClipboardList
+  DollarSign, Zap, HardDrive, MousePointer2, Grid, Filter, Check, Palette, User, Phone, MapPin, ArrowRight, ClipboardList, Power, Sliders
 } from 'lucide-react';
 import { generateSpatialSolution } from '../geminiService';
 import { useLanguage } from '../App';
@@ -53,8 +53,19 @@ const FloorPlanDesigner: React.FC<DesignerProps> = ({ products, customers, onSav
   const [devices, setDevices] = useState<DevicePoint[]>(initialSolution?.devices || []);
   const [rooms, setRooms] = useState<Room[]>(initialSolution?.rooms || []);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedDevice = useMemo(() => 
+    devices.find(d => d.id === selectedDeviceId), 
+    [devices, selectedDeviceId]
+  );
+
+  const selectedDeviceProduct = useMemo(() => 
+    products.find(p => p.id === selectedDevice?.productId), 
+    [products, selectedDevice]
+  );
 
   // BOM Calculation
   const bom = useMemo(() => {
@@ -96,14 +107,43 @@ const FloorPlanDesigner: React.FC<DesignerProps> = ({ products, customers, onSav
     });
   }, [products, selectedBrand, selectedLibraryCategory, productSearch]);
 
+  const rasterizeImage = (dataUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error("Canvas context failed"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => reject(new Error("Failed to load image for rasterization"));
+      img.src = dataUrl;
+    });
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        setFloorPlan(dataUrl);
-        processAlgorithm(dataUrl);
+      reader.onload = async (event) => {
+        let dataUrl = event.target?.result as string;
+        try {
+          setIsLoading(true);
+          // Rasterize to PNG to avoid "Unsupported MIME type: image/svg+xml" in Gemini API
+          dataUrl = await rasterizeImage(dataUrl);
+          setFloorPlan(dataUrl);
+          processAlgorithm(dataUrl);
+        } catch (err) {
+          console.error("Image processing failed:", err);
+          alert(lang === 'zh' ? '图像处理失败，请尝试其他格式（如 PNG/JPG）。' : 'Image processing failed. Please try a different format like PNG/JPG.');
+          setIsLoading(false);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -138,7 +178,10 @@ const FloorPlanDesigner: React.FC<DesignerProps> = ({ products, customers, onSav
             status: 'off'
           }));
           setDevices(finalDevices);
-        } catch (err) { console.error("AI Generation failed"); }
+        } catch (err) { 
+          console.error("AI Generation failed:", err); 
+          alert(lang === 'zh' ? 'AI 方案生成失败，您可以先进行手动设计。' : 'AI Solution generation failed. You can start with manual design.');
+        }
       } 
       else if (designMode === DesignMode.TEMPLATE && selectedTemplate) {
         const templateDevices: DevicePoint[] = [];
@@ -374,16 +417,81 @@ const FloorPlanDesigner: React.FC<DesignerProps> = ({ products, customers, onSav
     <div className="flex h-full animate-in fade-in duration-700 bg-white overflow-hidden">
       <div className="flex-1 flex flex-col relative bg-slate-900">
          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20 flex bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 shadow-2xl">
-            <button onClick={() => setActiveView('2d')} className={`flex items-center space-x-2 px-6 py-2 rounded-xl text-xs font-black transition-all ${activeView === '2d' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><Layout size={16} /><span>2D 平面图</span></button>
-            <button onClick={() => setActiveView('3d')} className={`flex items-center space-x-2 px-6 py-2 rounded-xl text-xs font-black transition-all ${activeView === '3d' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><Box size={16} /><span>3D 神经渲染</span></button>
+            <button onClick={() => { setActiveView('2d'); setSelectedDeviceId(null); }} className={`flex items-center space-x-2 px-6 py-2 rounded-xl text-xs font-black transition-all ${activeView === '2d' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><Layout size={16} /><span>2D 平面图</span></button>
+            <button onClick={() => { setActiveView('3d'); setSelectedDeviceId(null); }} className={`flex items-center space-x-2 px-6 py-2 rounded-xl text-xs font-black transition-all ${activeView === '3d' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><Box size={16} /><span>3D 神经渲染</span></button>
          </div>
          <div className="flex-1">
             {activeView === '3d' && vectorData ? (
-               <ThreeDFloorPlan data={vectorData} devices={devices} products={products} onUpdateDevice={handleUpdateDevice} style={designStyle} />
+               <ThreeDFloorPlan data={vectorData} devices={devices} products={products} onUpdateDevice={handleUpdateDevice} onSelectDevice={setSelectedDeviceId} style={designStyle} />
             ) : vectorData && (
                <VectorFloorPlan data={vectorData} devices={devices} products={products} onAddDeviceAt={handleManualAddAt} onUpdateDevice={handleUpdateDevice} onMoveDevice={handleDeviceMove} onRemoveDevice={(id) => setDevices(devices.filter(d => d.id !== id))} />
             )}
          </div>
+
+         {/* 3D 快速交互控制面板 */}
+         {activeView === '3d' && selectedDevice && (
+           <div className="absolute top-24 right-8 w-80 bg-slate-900/80 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 text-white shadow-2xl animate-in fade-in slide-in-from-right duration-300 z-[100]">
+              <div className="space-y-8">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                       <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+                          {selectedDeviceProduct ? (CATEGORY_ICONS as any)[selectedDeviceProduct.category] : <Cpu size={20} />}
+                       </div>
+                       <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400">远程控制中心</h4>
+                    </div>
+                    <button onClick={() => setSelectedDeviceId(null)} className="text-slate-500 hover:text-white transition-colors"><X size={20} /></button>
+                 </div>
+                 
+                 <div className="space-y-1">
+                    <p className="font-black text-xl leading-tight truncate">{selectedDeviceProduct?.name}</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{selectedDeviceProduct?.brand} · {selectedDevice.roomName}</p>
+                 </div>
+
+                 {selectedDeviceProduct?.category === '窗帘电机' ? (
+                    <div className="space-y-6">
+                       <div className="space-y-3">
+                          <div className="flex justify-between items-center text-xs font-black uppercase text-slate-400">
+                             <span>开合比例</span>
+                             <span className="text-yellow-400">{selectedDevice.value ?? 0}%</span>
+                          </div>
+                          <input 
+                             type="range" min="0" max="100" 
+                             value={selectedDevice.value ?? 0}
+                             onChange={(e) => handleUpdateDevice(selectedDevice.id, { value: Number(e.target.value), status: Number(e.target.value) > 0 ? 'on' : 'off' })}
+                             className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-yellow-400"
+                          />
+                       </div>
+                       <div className="grid grid-cols-2 gap-3">
+                          <button onClick={() => handleUpdateDevice(selectedDevice.id, { value: 0, status: 'off' })} className="py-3 bg-white/5 border border-white/5 rounded-2xl font-black text-[10px] uppercase hover:bg-white/10 transition-all">全开 (0%)</button>
+                          <button onClick={() => handleUpdateDevice(selectedDevice.id, { value: 100, status: 'on' })} className="py-3 bg-yellow-400 text-slate-900 rounded-2xl font-black text-[10px] uppercase hover:bg-yellow-300 transition-all">全闭 (100%)</button>
+                       </div>
+                    </div>
+                 ) : (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-3">
+                        <button 
+                          onClick={() => handleUpdateDevice(selectedDevice.id, { status: selectedDevice.status === 'on' ? 'off' : 'on' })} 
+                          className={`flex items-center justify-center space-x-2 py-5 rounded-3xl font-black text-xs transition-all ${selectedDevice.status === 'on' ? 'bg-yellow-400 text-slate-900 shadow-[0_0_20px_rgba(250,204,21,0.3)]' : 'bg-white/5 border border-white/5 text-slate-400'}`}
+                        >
+                          <Power size={16} /> <span>{selectedDevice.status === 'on' ? '关闭电源' : '开启电源'}</span>
+                        </button>
+                        <button className="flex items-center justify-center space-x-2 py-5 bg-white/5 border border-white/5 rounded-3xl font-black text-xs text-slate-400 hover:text-white transition-all">
+                           <Sliders size={16} /> <span>调节细节</span>
+                        </button>
+                      </div>
+                      <p className="text-center text-[10px] font-bold text-slate-600 uppercase tracking-tighter">Device ID: {selectedDevice.id}</p>
+                    </div>
+                 )}
+
+                 <div className="pt-6 border-t border-white/5 flex justify-center">
+                    <button onClick={() => { setDevices(devices.filter(d => d.id !== selectedDeviceId)); setSelectedDeviceId(null); }} className="text-red-400/40 hover:text-red-400 font-bold text-[10px] uppercase tracking-widest flex items-center space-x-2 transition-all">
+                      <Trash2 size={12} /> <span>从方案中移除</span>
+                    </button>
+                 </div>
+              </div>
+           </div>
+         )}
+
          <div className="absolute bottom-8 left-8 z-20 flex items-center space-x-4">
             <div className="bg-slate-950/90 backdrop-blur-xl border border-white/10 px-8 py-4 rounded-[2rem] flex items-center space-x-12 shadow-2xl text-white">
                <div><p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Customer</p><p className="font-bold text-blue-400">{selectedCustomer?.name}</p></div>
